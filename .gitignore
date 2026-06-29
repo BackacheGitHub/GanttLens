@@ -1,0 +1,38 @@
+# Build output
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+dependency-reduced-pom.xml
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+bin/
+out/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven
+.mvn/repository/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
