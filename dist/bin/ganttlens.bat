@@ -33,6 +33,6 @@ if not exist "%JAR_FILE%" (
 )
 
 REM Run GanttLens
-"%JAVA_CMD%" -jar "%JAR_FILE%" %*
+"%JAVA_CMD%" -Dlog4j2.statusLogger.level=OFF -jar "%JAR_FILE%" %*
 
 endlocal

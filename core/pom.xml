@@ -29,6 +29,13 @@
             <artifactId>poi-ooxml</artifactId>
         </dependency>
 
+        <!-- Log4j2 Core for logging implementation -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- JUnit 5 for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

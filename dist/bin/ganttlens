@@ -30,4 +30,4 @@ if [ ! -f "$JAR_FILE" ]; then
 fi
 
 # Run GanttLens
-exec "$JAVA_CMD" -jar "$JAR_FILE" "$@"
+exec "$JAVA_CMD" -Dlog4j2.statusLogger.level=OFF -jar "$JAR_FILE" "$@"

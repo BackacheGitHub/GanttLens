@@ -31,6 +31,7 @@
         <junit.version>5.10.2</junit.version>
         <assertj.version>3.25.3</assertj.version>
         <poi.version>5.2.5</poi.version>
+        <log4j2.version>2.21.1</log4j2.version>
     </properties>
 
     <dependencyManagement>
@@ -70,6 +71,13 @@
                 <groupId>org.apache.poi</groupId>
                 <artifactId>poi-ooxml</artifactId>
                 <version>${poi.version}</version>
+            </dependency>
+
+            <!-- Log4j2 Core for logging implementation -->
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j2.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
