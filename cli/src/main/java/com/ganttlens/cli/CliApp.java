@@ -10,15 +10,20 @@ import picocli.CommandLine;
     description = "PlantUML Gantt chart analysis and insight tool",
     version = "GanttLens 1.0.0-SNAPSHOT",
     mixinStandardHelpOptions = true,
-    subcommands = { AnalyzeCommand.class }
+    subcommands = { AnalyzeCommand.class, ExportCommand.class }
 )
 public class CliApp implements Runnable {
 
     @Override
     public void run() {
         System.out.println("GanttLens - PlantUML Gantt Chart Analyzer");
-        System.out.println("Usage: ganttlens analyze -f <file.puml>");
-        System.out.println("Try 'ganttlens analyze --help' for more information.");
+        System.out.println("Usage: ganttlens <command> [options]");
+        System.out.println();
+        System.out.println("Commands:");
+        System.out.println("  analyze   Analyze a .puml file and show workload report");
+        System.out.println("  export    Export analysis to Excel (.xlsx) format");
+        System.out.println();
+        System.out.println("Try 'ganttlens <command> --help' for more information.");
     }
 
     public static void main(String[] args) {
