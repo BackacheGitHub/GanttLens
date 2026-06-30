@@ -1,0 +1,9 @@
+@startgantt
+saturday are closed
+sunday are closed
+title Sample Project
+
+[Design] on {Alice} requires 3 days
+[Coding] on {Bob} starts at [Design]'s end requires 5 days
+[Testing] on {Alice} {Charlie} starts at [Coding]'s end requires 2 days
+@endgantt

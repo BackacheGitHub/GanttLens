@@ -3,6 +3,7 @@ package com.ganttlens.analyzer;
 import com.ganttlens.model.Assignment;
 import com.ganttlens.model.GanttSchedule;
 import com.ganttlens.model.PersonDailyLoad;
+import com.ganttlens.model.ScheduleConfig;
 import com.ganttlens.model.Task;
 
 import java.time.LocalDate;
@@ -18,6 +19,9 @@ public class WorkloadAnalyzer {
      * Computes daily load for each person based on the schedule.
      */
     public List<PersonDailyLoad> analyzeDailyLoads(GanttSchedule schedule) {
+        // Build a quick-lookup set of person-off days
+        Set<ScheduleConfig.PersonOffEntry> personOffDays = schedule.config().personOffDays();
+
         Map<String, Map<LocalDate, List<PersonDailyLoad.TaskLoad>>> personDailyMap = new LinkedHashMap<>();
 
         for (Task task : schedule.tasks()) {
@@ -30,6 +34,12 @@ public class WorkloadAnalyzer {
 
                 LocalDate current = task.startDate();
                 while (!current.isAfter(task.endDate())) {
+                    // Skip person-off days
+                    if (!personOffDays.isEmpty() &&
+                        personOffDays.contains(new ScheduleConfig.PersonOffEntry(person, current))) {
+                        current = current.plusDays(1);
+                        continue;
+                    }
                     personDailyMap.get(person)
                         .computeIfAbsent(current, k -> new ArrayList<>())
                         .add(new PersonDailyLoad.TaskLoad(
