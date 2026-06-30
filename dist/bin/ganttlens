@@ -1,0 +1,33 @@
+#!/bin/sh
+# GanttLens - PlantUML Gantt Chart Analyzer
+# Wrapper script for Unix/Linux/macOS
+
+# Determine the script's location
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Check if JAVA_HOME is set
+if [ -n "$JAVA_HOME" ]; then
+    JAVA_CMD="$JAVA_HOME/bin/java"
+else
+    # Try to find java in PATH
+    if command -v java > /dev/null 2>&1; then
+        JAVA_CMD="java"
+    else
+        echo "Error: Java is not installed or JAVA_HOME is not set."
+        echo "Please install JDK 17 or later and set JAVA_HOME."
+        exit 1
+    fi
+fi
+
+# Set the JAR location
+JAR_FILE="$SCRIPT_DIR/../lib/ganttlens-cli.jar"
+
+# Check if JAR exists
+if [ ! -f "$JAR_FILE" ]; then
+    echo "Error: GanttLens JAR not found at: $JAR_FILE"
+    echo "Please ensure the distribution is properly installed."
+    exit 1
+fi
+
+# Run GanttLens
+exec "$JAVA_CMD" -jar "$JAR_FILE" "$@"

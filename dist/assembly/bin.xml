@@ -1,0 +1,31 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <id>bin</id>
+    <formats>
+        <format>zip</format>
+        <format>tar.gz</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+
+    <fileSets>
+        <!-- Bin scripts -->
+        <fileSet>
+            <directory>${project.basedir}/../dist/bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+    </fileSets>
+
+    <dependencySets>
+        <!-- Main CLI JAR (shaded fat JAR) -->
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <includes>
+                <include>com.ganttlens:ganttlens-cli</include>
+            </includes>
+            <outputFileNameMapping>ganttlens-cli.jar</outputFileNameMapping>
+        </dependencySet>
+    </dependencySets>
+</assembly>
