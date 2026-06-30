@@ -56,9 +56,8 @@ java -jar cli/target/ganttlens-cli.jar export -f plan.puml -o output.xlsx
 ### GUI 应用
 
 ```bash
-# 启动 GUI
-cd gui
-mvn javafx:run
+# 启动 GUI（在项目根目录执行）
+./mvnw exec:java -pl gui
 ```
 
 ## 项目结构
@@ -81,26 +80,3 @@ GanttLens/
 
 - v1.0.0 - 初始版本，支持核心语法和分析功能
 - v1.1.0 - 完成语法扩展和关键路径分析
-# GanttLens
-
-PlantUML 甘特图分析与洞察工具
-
-## 文档
-
-- [架构设计](docs/architecture.md)
-
-## 环境要求
-
-- Java 17+
-
-## 构建
-
-```bash
-./mvnw clean package
-```
-
-## 使用
-
-```bash
-java -jar cli/target/ganttlens-cli.jar analyze -f plan.puml
-```

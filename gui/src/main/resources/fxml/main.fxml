@@ -5,6 +5,7 @@
 <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.ganttlens.gui.MainController"
             fx:id="rootPane"
             prefWidth="1200"
             prefHeight="800">
@@ -17,12 +18,12 @@
                     <items>
                         <MenuItem text="Open" onAction="#openFile" />
                         <SeparatorMenuItem />
-                        <MenuItem text="Exit" onAction="#exit" />
+
                     </items>
                 </Menu>
                 <Menu text="Analyze">
                     <items>
-                        <MenuItem text="Parse & Analyze" onAction="#parseAndAnalyze" />
+                        <MenuItem text="Parse &amp; Analyze" onAction="#parseAndAnalyze" />
                     </items>
                 </Menu>
             </menus>
@@ -50,8 +51,7 @@
                     <TextArea fx:id="codeArea"
                               VBox.vgrow="ALWAYS"
                               styleClass="code-area"
-                              wrapText="true"
-                              font="monospaced" />
+                              wrapText="true" />
                 </VBox>
 
                 <!-- Analysis Tabs -->

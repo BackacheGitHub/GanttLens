@@ -60,6 +60,15 @@
                     <mainClass>com.ganttlens.gui.GuiApp</mainClass>
                 </configuration>
             </plugin>
+            <!-- Exec Maven plugin for running GUI -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.ganttlens.gui.GuiApp</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
