@@ -1,0 +1,8 @@
+@startgantt
+saturday are closed
+sunday are closed
+
+[任务A] on {张三} requires 3 days
+[任务B] on {张三} starts at [任务A]'s end requires 3 days
+[任务C] on {张三} starts at [任务A]'s end requires 2 days
+@endgantt
