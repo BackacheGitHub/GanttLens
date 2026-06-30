@@ -2,6 +2,10 @@
 
 PlantUML 甘特图分析与洞察工具
 
+## 文档
+
+- [架构设计](docs/architecture.md)
+
 ## 环境要求
 
 - Java 17+
