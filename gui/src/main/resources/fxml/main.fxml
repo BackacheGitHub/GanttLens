@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:id="rootPane"
+            prefWidth="1200"
+            prefHeight="800">
+
+    <!-- Top Menu Bar -->
+    <top>
+        <MenuBar>
+            <menus>
+                <Menu text="File">
+                    <items>
+                        <MenuItem text="Open" onAction="#openFile" />
+                        <SeparatorMenuItem />
+                        <MenuItem text="Exit" onAction="#exit" />
+                    </items>
+                </Menu>
+                <Menu text="Analyze">
+                    <items>
+                        <MenuItem text="Parse & Analyze" onAction="#parseAndAnalyze" />
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
+    </top>
+
+    <!-- Left Panel: File Tree -->
+    <left>
+        <VBox prefWidth="200">
+            <padding>
+                <Insets top="5" right="5" bottom="5" left="5" />
+            </padding>
+            <Label text="Files" styleClass="header-label" />
+            <TreeView fx:id="fileTreeView" VBox.vgrow="ALWAYS" />
+        </VBox>
+    </left>
+
+    <!-- Center: Code Editor + Analysis -->
+    <center>
+        <SplitPane dividerPositions="0.5">
+            <items>
+                <!-- Code Editor -->
+                <VBox>
+                    <Label text="PlantUML Code" styleClass="header-label" />
+                    <TextArea fx:id="codeArea"
+                              VBox.vgrow="ALWAYS"
+                              styleClass="code-area"
+                              wrapText="true"
+                              font="monospaced" />
+                </VBox>
+
+                <!-- Analysis Tabs -->
+                <TabPane fx:id="analysisTabPane">
+                    <tabs>
+                        <Tab text="Gantt Chart">
+                            <content>
+                                <Label text="Gantt Chart View - Coming in Iteration 3.2" />
+                            </content>
+                        </Tab>
+                        <Tab text="Workload">
+                            <content>
+                                <Label text="Workload Heatmap - Coming in Iteration 3.2" />
+                            </content>
+                        </Tab>
+                        <Tab text="Statistics">
+                            <content>
+                                <Label text="Statistics Panel - Coming in Iteration 3.2" />
+                            </content>
+                        </Tab>
+                    </tabs>
+                </TabPane>
+            </items>
+        </SplitPane>
+    </center>
+
+    <!-- Bottom: Status Bar -->
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <padding>
+                <Insets top="5" right="10" bottom="5" left="10" />
+            </padding>
+            <Label fx:id="statusLabel" text="Ready" />
+        </HBox>
+    </bottom>
+
+</BorderPane>

@@ -1,0 +1,29 @@
+/* GanttLens GUI Styles */
+
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+.header-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 5px;
+}
+
+.code-area {
+    -fx-font-family: "Consolas";
+    -fx-font-size: 13px;
+}
+
+.menu-bar {
+    -fx-background-color: #f0f0f0;
+}
+
+.tab-pane {
+    -fx-background-color: white;
+}
+
+.label {
+    -fx-padding: 5px;
+}

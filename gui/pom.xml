@@ -24,8 +24,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- JavaFX dependencies (Phase 3) -->
-        <!-- Uncomment when implementing Phase 3
+        <!-- JavaFX dependencies -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -36,7 +35,6 @@
             <artifactId>javafx-fxml</artifactId>
             <version>21</version>
         </dependency>
-        -->
 
         <!-- JUnit 5 for testing -->
         <dependency>
@@ -50,5 +48,19 @@
             <artifactId>assertj-core</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- JavaFX Maven plugin -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>com.ganttlens.gui.GuiApp</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
