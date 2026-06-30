@@ -11,5 +11,7 @@ public record ProjectStats(
     Map<String, Double> personManDays,
     List<PersonDailyLoad> dailyLoads,
     List<OverloadRecord> overloads,
-    List<Task> tasks
+    List<Task> tasks,
+    CriticalPathResult criticalPath,
+    List<BalanceSuggestion> balanceSuggestions
 ) {}

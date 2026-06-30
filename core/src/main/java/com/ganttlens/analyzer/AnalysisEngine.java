@@ -1,21 +1,26 @@
 package com.ganttlens.analyzer;
 
-import com.ganttlens.model.GanttSchedule;
-import com.ganttlens.model.ProjectStats;
+import com.ganttlens.model.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
- * Main analysis engine that orchestrates workload analysis and overload checking.
+ * Main analysis engine that orchestrates workload analysis, overload checking,
+ * critical path analysis, and resource balancing.
  */
 public class AnalysisEngine {
 
     private final WorkloadAnalyzer workloadAnalyzer;
     private final OverloadChecker overloadChecker;
+    private final CriticalPathAnalyzer criticalPathAnalyzer;
+    private final ResourceBalancer resourceBalancer;
 
     public AnalysisEngine() {
         this.workloadAnalyzer = new WorkloadAnalyzer();
         this.overloadChecker = new OverloadChecker(workloadAnalyzer);
+        this.criticalPathAnalyzer = new CriticalPathAnalyzer();
+        this.resourceBalancer = new ResourceBalancer();
     }
 
     /**
@@ -27,12 +32,18 @@ public class AnalysisEngine {
             .mapToDouble(Double::doubleValue)
             .sum();
 
+        CriticalPathResult criticalPath = criticalPathAnalyzer.analyze(schedule);
+        List<OverloadRecord> overloads = overloadChecker.check(schedule);
+        List<BalanceSuggestion> suggestions = resourceBalancer.balance(schedule, overloads);
+
         return new ProjectStats(
             totalManDays,
             personManDays,
             workloadAnalyzer.analyzeDailyLoads(schedule),
-            overloadChecker.check(schedule),
-            schedule.tasks()
+            overloads,
+            schedule.tasks(),
+            criticalPath,
+            suggestions
         );
     }
 }
