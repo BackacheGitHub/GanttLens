@@ -128,14 +128,16 @@ public class ExcelGanttExporter {
             setCell(row, 2, people, null);
             setCell(row, 3, String.valueOf(task.durationDays()), null);
 
-            // Gantt bar: color cells for task duration
+            // Gantt bar: color cells for task duration (skip non-working days)
             if (task.startDate() != null && task.endDate() != null) {
+                ScheduleConfig config = schedule.config();
                 int barColor = getTaskColor(task, personColorMap);
                 CellStyle barStyle = createBarStyle(wb, barColor);
 
                 for (LocalDate d = task.startDate(); !d.isAfter(task.endDate()); d = d.plusDays(1)) {
                     if (d.isBefore(startDate)) continue;
                     if (d.isAfter(endDate)) break;
+                    if (!config.isWorkingDay(d)) continue;
 
                     int col = 4 + (int) (d.toEpochDay() - startDate.toEpochDay());
                     Cell cell = row.createCell(col);

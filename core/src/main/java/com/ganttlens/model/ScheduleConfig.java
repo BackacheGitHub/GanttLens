@@ -15,4 +15,14 @@ public record ScheduleConfig(
     Set<PersonOffEntry> personOffDays
 ) {
     public record PersonOffEntry(String person, LocalDate date) {}
+
+    /**
+     * Returns true if the given date is a working day
+     * (not a closed weekend and not a holiday).
+     */
+    public boolean isWorkingDay(LocalDate date) {
+        if (saturdayClosed && date.getDayOfWeek().getValue() == 6) return false;
+        if (sundayClosed && date.getDayOfWeek().getValue() == 7) return false;
+        return holidays == null || !holidays.contains(date);
+    }
 }

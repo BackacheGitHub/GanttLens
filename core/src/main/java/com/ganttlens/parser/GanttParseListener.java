@@ -176,9 +176,7 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
      * Builds the final GanttSchedule after parsing is complete.
      */
     public GanttSchedule buildSchedule() {
-        // Compute end dates and resolve dependencies
-        resolveTaskDates();
-
+        // Build config first so it can be used for date calculations
         ScheduleConfig config = new ScheduleConfig(
             title,
             null, // projectStartDate - will be derived from first task
@@ -188,14 +186,17 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             personOffDays
         );
 
+        // Compute end dates and resolve dependencies
+        resolveTaskDates(config);
+
         return new GanttSchedule(config, List.copyOf(tasks));
     }
 
-    private void resolveTaskDates() {
+    private void resolveTaskDates(ScheduleConfig config) {
         // First pass: resolve tasks with explicit start dates
         for (Task task : tasks) {
             if (task.startDate() != null) {
-                LocalDate endDate = computeEndDate(task.startDate(), task.durationDays());
+                LocalDate endDate = computeEndDate(task.startDate(), task.durationDays(), config);
                 updateTask(task, task.startDate(), endDate);
             }
         }
@@ -216,7 +217,7 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 if (task.dependencyIds().isEmpty() && task.durationDays() > 0) {
                     // No dependency, no start date - use default start
                     LocalDate startDate = LocalDate.now();
-                    LocalDate endDate = computeEndDate(startDate, task.durationDays());
+                    LocalDate endDate = computeEndDate(startDate, task.durationDays(), config);
                     updateTask(task, startDate, endDate);
                     changed = true;
                     continue;
@@ -224,8 +225,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 for (String depName : task.dependencyIds()) {
                     Task dep = taskMap.get(depName);
                     if (dep != null && dep.endDate() != null) {
-                        LocalDate startDate = nextWorkingDay(dep.endDate());
-                        LocalDate endDate = computeEndDate(startDate, task.durationDays());
+                        LocalDate startDate = nextWorkingDay(dep.endDate(), config);
+                        LocalDate endDate = computeEndDate(startDate, task.durationDays(), config);
                         updateTask(task, startDate, endDate);
                         changed = true;
                         break;
@@ -235,29 +236,23 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
         }
     }
 
-    private LocalDate computeEndDate(LocalDate startDate, int workDays) {
+    private LocalDate computeEndDate(LocalDate startDate, int workDays, ScheduleConfig config) {
         if (workDays <= 0) return startDate;
         LocalDate current = startDate;
         int daysAdded = 0;
         while (daysAdded < workDays - 1) {
-            current = nextWorkingDay(current);
+            current = nextWorkingDay(current, config);
             daysAdded++;
         }
         return current;
     }
 
-    private LocalDate nextWorkingDay(LocalDate date) {
+    private LocalDate nextWorkingDay(LocalDate date, ScheduleConfig config) {
         LocalDate next = date.plusDays(1);
-        while (!isWorkingDay(next)) {
+        while (!config.isWorkingDay(next)) {
             next = next.plusDays(1);
         }
         return next;
-    }
-
-    private boolean isWorkingDay(LocalDate date) {
-        if (saturdayClosed && date.getDayOfWeek().getValue() == 6) return false;
-        if (sundayClosed && date.getDayOfWeek().getValue() == 7) return false;
-        return !holidays.contains(date);
     }
 
     private void updateTask(Task task, LocalDate startDate, LocalDate endDate) {
