@@ -1,0 +1,9 @@
+@startgantt
+saturday are closed
+sunday are closed
+title Then Syntax Test
+
+[Design] on {Alice} requires 3 days
+then [Coding] on {Bob} requires 5 days
+then [Testing] on {Charlie} requires 2 days
+@endgantt

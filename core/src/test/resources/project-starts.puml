@@ -1,0 +1,9 @@
+@startgantt
+project starts 2026-07-01
+saturday are closed
+sunday are closed
+title Project Starts Test
+
+[Phase1] on {Alice} requires 5 days
+[Phase2] on {Bob} starts at [Phase1]'s end requires 3 days
+@endgantt

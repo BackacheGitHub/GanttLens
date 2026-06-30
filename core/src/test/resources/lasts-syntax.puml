@@ -1,0 +1,8 @@
+@startgantt
+saturday are closed
+sunday are closed
+title Lasts Syntax Test
+
+[Phase1] on {Alice} lasts 2 weeks
+[Phase2] on {Bob} starts at [Phase1]'s end lasts 10 days
+@endgantt

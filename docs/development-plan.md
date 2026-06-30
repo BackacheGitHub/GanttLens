@@ -10,9 +10,9 @@
 
 ---
 
-## 第一阶段：扩展 PlantUML 语法支持
+## 第一阶段：扩展 PlantUML 语法支持 ✅ 已完成
 
-### 迭代 1.1 — 核心语法补全（覆盖 80% 常见写法）
+### 迭代 1.1 — 核心语法补全（覆盖 80% 常见写法）✅
 
 | # | 任务 | 关键文件 | 验证 |
 |---|------|---------|------|
@@ -27,24 +27,24 @@
 
 **新增测试文件：** `then-tasks.puml`, `arrow-deps.puml`, `milestones.puml`, `full-syntax.puml`
 
-### 迭代 1.2 — 增强指令
+### 迭代 1.2 — 增强指令 ✅
 
-| # | 任务 | 说明 |
-|---|------|------|
-| 1 | `is colored in Green` | Task 增加 color 字段 |
-| 2 | `is 40% completed` | TaskStatus 扩展完成度 |
-| 3 | `and` 组合语法 | `starts DATE and ends DATE` |
-| 4 | `DATE to DATE is closed` | 日期范围关闭 |
-| 5 | `is open` | 在关闭范围内打开特定日期 |
-| 6 | `requires N weeks` | duration 支持周 |
+| # | 任务 | 说明 | 自动化验收标准 |
+|---|------|------|----------------|
+| 1 | `is colored in Green` | Task 增加 color 字段 | 单元测试：解析 `[T1] is colored in Green`，断言 `task.color().equals("Green")` |
+| 2 | `is 40% completed` | TaskStatus 扩展完成度 | 单元测试：解析 `[T1] is 40% completed`，断言 `task.completionPercent() == 40` |
+| 3 | `and` 组合语法 | `starts DATE and ends DATE` | 单元测试：解析 `starts 2026-07-01 and ends 2026-07-10`，断言 startDate 和 endDate 正确 |
+| 4 | `DATE to DATE is closed` | 日期范围关闭 | 单元测试：解析 `2026-07-01 to 2026-07-05 is closed`，断言 holidays 包含 5 天 |
+| 5 | `is open` | 在关闭范围内打开特定日期 | 单元测试：解析范围关闭 + `2026-07-03 is open`，断言 07-03 不在 holidays |
+| 6 | `requires N weeks` | duration 支持周 | 单元测试：周末关闭时 `requires 2 weeks`，断言 `durationDays == 10` |
 
-### 迭代 1.3 — 解析健壮性
+### 迭代 1.3 — 解析健壮性 ✅
 
-| # | 任务 | 说明 |
-|---|------|------|
-| 1 | 错误恢复 | 不支持语法给 warning 而非崩溃 |
-| 2 | `D+N` 相对日期 | `starts D+15` |
-| 3 | 循环依赖检测 | `resolveTaskDates()` 拓扑排序 |
+| # | 任务 | 说明 | 自动化验收标准 |
+|---|------|------|----------------|
+| 1 | 错误恢复 | 不支持语法给 warning 而非崩溃 | 单元测试：解析含未知指令的 puml，断言不抛异常且返回有效 Schedule |
+| 2 | `D+N` 相对日期 | `starts D+15` | 单元测试：项目起始日 07-01，`starts D+15`，断言 startDate == 07-16 |
+| 3 | 循环依赖检测 | `resolveTaskDates()` 拓扑排序 | 单元测试：解析 A→B→C→A 的 puml，断言抛出或记录 CircularDependencyException |
 
 ---
 
@@ -73,13 +73,13 @@
 
 **对管理者的价值**：知道该重点盯哪些任务。
 
-| # | 任务 | 关键文件 |
-|---|------|----------|
-| 1 | 新建 `CriticalPathAnalyzer.java` | `core/.../analyzer/` — 拓扑排序 + 最长路径 |
-| 2 | 新建 `CriticalPathResult.java` | `core/.../model/` — record: criticalTaskIds, totalDuration, taskFloats |
-| 3 | 集成到 `AnalysisEngine` | `analyze()` 中调用 |
-| 4 | 集成到 `ProjectStats` | 增加 criticalPath 字段 |
-| 5 | CLI 输出关键路径 | `AnalyzeCommand.java` 增加段落 |
+| # | 任务 | 关键文件 | 自动化验收标准 |
+|---|------|----------|----------------|
+| 1 | 新建 `CriticalPathAnalyzer.java` | `core/.../analyzer/` — 拓扑排序 + 最长路径 | 单元测试：给定已知关键路径的 puml，断言返回正确的 criticalTaskIds |
+| 2 | 新建 `CriticalPathResult.java` | `core/.../model/` — record: criticalTaskIds, totalDuration, taskFloats | 单元测试：断言 totalDuration == 关键路径总天数，非关键任务 float > 0 |
+| 3 | 集成到 `AnalysisEngine` | `analyze()` 中调用 | 单元测试：调用 `analyze()`，断言返回的 ProjectStats 包含非空 criticalPath |
+| 4 | 集成到 `ProjectStats` | 增加 criticalPath 字段 | 单元测试：断言 ProjectStats.criticalPath() 不为 null |
+| 5 | CLI 输出关键路径 | `AnalyzeCommand.java` 增加段落 | 集成测试：运行 CLI，断言输出包含 "Critical Path" 和任务名称 |
 
 ### 迭代 2.2 — 资源平衡建议
 
@@ -107,12 +107,12 @@
 
 **两者关系**：迭代 2.1 必须先做（提供浮动时间数据），2.2 才能用。
 
-| # | 任务 | 关键文件 |
-|---|------|----------|
-| 1 | 新建 `ResourceBalancer.java` | 输入过载记录，输出建议（优先推迟浮动时间最大的任务） |
-| 2 | 新建 `BalanceSuggestion.java` | record: person, suggestTask, suggestStart, reason |
-| 3 | 集成到 `AnalysisEngine` | 过载时自动运行 |
-| 4 | CLI/Excel 输出建议 | 报告和导出中展示 |
+| # | 任务 | 关键文件 | 自动化验收标准 |
+|---|------|----------|----------------|
+| 1 | 新建 `ResourceBalancer.java` | 输入过载记录，输出建议 | 单元测试：给定过载场景，断言返回非空建议列表 |
+| 2 | 新建 `BalanceSuggestion.java` | record: person, suggestTask, suggestStart, reason | 单元测试：断言 suggestion 包含正确 person、task、reason |
+| 3 | 集成到 `AnalysisEngine` | 过载时自动运行 | 单元测试：调用 `analyze()`，断言过载时返回 balanceSuggestions |
+| 4 | CLI/Excel 输出建议 | 报告和导出中展示 | 集成测试：运行 CLI，断言输出包含 "Suggestion" 和任务名称 |
 
 ---
 
@@ -120,20 +120,20 @@
 
 ### 迭代 3.1 — 基础框架
 
-| # | 任务 | 关键文件 |
-|---|------|----------|
-| 1 | 启用 JavaFX 依赖 | `gui/pom.xml`, `javafx-maven-plugin` |
-| 2 | `GuiApp.java` 入口 | JavaFX Application |
-| 3 | 主界面 FXML | 三栏布局：文件树/甘特图/分析面板 |
-| 4 | `MainController.java` | 文件选择 + 调用 core |
+| # | 任务 | 关键文件 | 自动化验收标准 |
+|---|------|----------|----------------|
+| 1 | 启用 JavaFX 依赖 | `gui/pom.xml`, `javafx-maven-plugin` | 构建测试：`mvn compile -pl gui` 成功 |
+| 2 | `GuiApp.java` 入口 | JavaFX Application | 单元测试：断言 GuiApp 类存在且继承 Application |
+| 3 | 主界面 FXML | 三栏布局：文件树/甘特图/分析面板 | 单元测试：断言 FXML 文件可解析为有效 Node |
+| 4 | `MainController.java` | 文件选择 + 调用 core | 集成测试：断言 controller 可加载 puml 并返回有效 schedule |
 
 ### 迭代 3.2 — 可视化面板
 
-| # | 任务 | 说明 |
-|---|------|------|
-| 1 | 甘特图视图 | Canvas/Pane 绘制条形图 |
-| 2 | 工作量热力图 | 颜色编码表格，过载红色高亮 |
-| 3 | 统计摘要面板 | 关键指标 |
+| # | 任务 | 说明 | 自动化验收标准 |
+|---|------|------|----------------|
+| 1 | 甘特图视图 | Canvas/Pane 绘制条形图 | 单元测试：断言 GanttChartView 可渲染任务列表，返回非空 Node |
+| 2 | 工作量热力图 | 颜色编码表格，过载红色高亮 | 单元测试：断言 WorkloadHeatmapView 可显示负荷数据，过载单元格样式正确 |
+| 3 | 统计摘要面板 | 关键指标 | 单元测试：断言 StatsPanel 显示的数值与 ProjectStats 一致 |
 
 ---
 

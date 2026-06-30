@@ -1,0 +1,12 @@
+@startgantt
+saturday are closed
+sunday are closed
+title Comments Test
+
+' This is a line comment
+[Design] on {Alice} requires 3 days
+
+/' This is a
+   block comment '/
+[Coding] on {Bob} starts at [Design]'s end requires 5 days
+@endgantt

@@ -1,0 +1,10 @@
+@startgantt
+saturday are closed
+sunday are closed
+title Arrow Dependency Test
+
+[Design] on {Alice} requires 3 days
+[Coding] on {Bob} requires 5 days
+[Testing] on {Charlie} requires 2 days
+[Design] -> [Coding] -> [Testing]
+@endgantt

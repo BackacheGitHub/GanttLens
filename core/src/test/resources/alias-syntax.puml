@@ -1,0 +1,9 @@
+@startgantt
+saturday are closed
+sunday are closed
+title Alias Syntax Test
+
+[Design] as [D] on {Alice} requires 3 days
+[Coding] as [C] on {Bob} starts at [D]'s end requires 5 days
+[Testing] on {Charlie} starts at [C]'s end requires 2 days
+@endgantt

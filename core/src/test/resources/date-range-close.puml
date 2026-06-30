@@ -1,0 +1,9 @@
+@startgantt
+saturday are closed
+sunday are closed
+2026-07-04 to 2026-07-06 is closed
+2026-07-05 is open
+title Date Range Close Test
+
+[Task1] on {Alice} starts 2026-07-01 requires 10 days
+@endgantt
