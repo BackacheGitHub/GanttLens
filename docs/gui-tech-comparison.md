@@ -1,6 +1,67 @@
-# GUI 绘图技术选型讨论
+# GUI 绘图技术选型决策
 
-## Canvas vs Scene Graph 对比
+## 最终决策：混合架构（Scene Graph + Canvas）
+
+### 方案概述
+
+| 层 | 技术 | 理由 |
+|---|---|---|
+| 应用框架（菜单、侧栏、对话框、属性面板） | **Scene Graph** | 布局、交互、可测试性全面占优 |
+| 甘特图绘图区 | **Canvas** | 200+ 任务的渲染性能更优，像素控制更精确 |
+| 布局计算逻辑 | **纯 Java 类**（`GanttLayoutEngine`） | 可独立单元测试，Humble Object 模式 |
+| 自动化测试 | **逻辑测试 + 基准截图对比** | 逻辑测试为主力，截图对比为辅助信号 |
+
+### 决策依据
+
+#### 1. 规模需求
+- 目标支持 200+ 任务、多项目并行管理、跨项目人员协同
+- 200 个任务条 + 依赖箭头 + 时间轴在 Scene Graph 下会产生 2000-4000 个节点，接近性能边界
+- Canvas 在此规模下渲染性能更稳定
+
+#### 2. 交互需求
+- 交互以按钮、下拉框、对话框为主，不强求拖拽
+- 拖拽的复杂度主要在业务逻辑（时间对齐、依赖约束、Undo/Redo），不在绘图技术
+- 甘特图本身更多是"展示 + 选择"，是 Canvas 的甜区
+
+#### 3. 视觉风格
+- 参考 OmniPlan：功能性视觉元素（进度条、状态色块）优先，拒绝纯装饰（渐变、纹理）
+- 扁平色块 + 进度填充 + 清晰依赖箭头的风格，Canvas 和 Scene Graph 均可实现
+
+#### 4. 数据架构
+- 采用临时编辑 + 显式保存机制：修改先作用于内存任务模型，支持 Undo/Redo
+- 仅在用户主动保存时序列化回 PlantUML 源码
+- 渲染技术与数据架构完全解耦
+
+#### 5. 可测试性
+- 核心可测试性来自**布局逻辑层**（`GanttLayoutEngine`），不来自渲染层
+- 采用 Humble Object 模式：`layoutTasks(tasks, config) -> List<TaskLayout>` 为纯函数，可独立单元测试
+- 截图对比作为辅助信号，捕捉"逻辑测试通过但视觉表现变了"的边缘情况
+- 截图对比方案：同机基准对比 + 差异人工审核，阈值 > 1% 时标记失败
+
+### 业界参考
+- VS Code：Canvas 渲染编辑器，测试 TextModel 而非像素
+- JetBrains IDE：自绘编辑器，测试 PSI 模型和编辑器行为
+- Flutter/React 社区：测组件状态和行为，截图对比（Percy/Chromatic）为补充手段
+- Martin Fowler "Humble Object" 模式：将复杂对象拆分为可测逻辑 + 不可测展示层
+
+### 甘特图 Canvas 区域的技术方案
+
+```java
+// 架构分层
+gui/
+  GanttCanvasView.java       // Canvas 渲染（哑终端，只做绘制命令）
+  GanttLayoutEngine.java     // 纯 Java 布局计算（可独立测试）
+  GanttInteractionHandler.java // 鼠标事件 -> 命中检测 -> 业务操作
+  TaskSelectionModel.java    // 选中状态管理
+```
+
+- `GanttLayoutEngine`：输入任务列表 + 视图配置，输出每个任务的坐标、尺寸
+- `GanttCanvasView`：遍历布局结果，调用 GraphicsContext 绘制
+- `GanttInteractionHandler`：鼠标坐标 -> 命中检测（委托给 LayoutEngine 的纯函数）-> 触发操作
+
+---
+
+## 附录：Canvas vs Scene Graph 详细对比
 
 ### 1. 基本概念
 
@@ -21,112 +82,11 @@
 | 布局管理 | ❌ 手动定位 | ✅ VBox/HBox/BorderPane |
 | 性能（1000+ 元素） | ✅ 好 | ⚠️ 可能卡顿 |
 
-### 3. 甘特图场景对比
-
-#### 渲染细节
-
-- **Canvas**：渐变色、纹理映射、自定义虚线样式更灵活
-- **Scene Graph**：基本填充/描边足够，复杂效果需要 Canvas
-
-#### 交互体验
-
-**Canvas 实现点击**：
-```java
-canvas.setOnMouseMoved(e -> {
-    // 需要遍历所有任务，手动计算鼠标位置
-    for (Task task : tasks) {
-        if (isInsideTask(e.getX(), e.getY(), task)) {
-            // 高亮
-            break;
-        }
-    }
-    redraw();  // 重绘整个画布
-});
-```
-
-**Scene Graph 实现点击**：
-```java
-Rectangle taskBar = new Rectangle(...);
-taskBar.setOnMouseEntered(e -> taskBar.setFill(HIGHLIGHT_COLOR));
-// JavaFX 自动处理碰撞检测
-```
-
-#### 拖拽功能
-
-| 逻辑 | Canvas | Scene Graph |
-|------|--------|-------------|
-| 判断点击了哪个任务 | 自己写 | 自动 ✅ |
-| 拖拽移动 | 自己写 | 自动 ✅ |
-| **时间对齐**（吸附到日期） | 自己写 | 自己写 |
-| **依赖约束**（不能早于前置） | 自己写 | 自己写 |
-| **Undo/Redo** | 自己写 | 自己写 |
-
-**结论**：拖拽的复杂度主要在**业务逻辑**，不在绘图技术
-
-### 4. 自动化测试
+### 3. 自动化测试对比
 
 | 测试类型 | Canvas | Scene Graph |
 |----------|--------|-------------|
-| **单元测试业务逻辑** | ✅ 一样 | ✅ 一样 |
+| **布局/业务逻辑测试** | ✅ 一样（纯函数） | ✅ 一样（纯函数） |
 | **UI 交互测试** | ❌ 困难 | ✅ 容易 |
-| **视觉回归测试** | ❌ 很难 | ⚠️ 可以但麻烦 |
-| **整体可测试性** | ⭐⭐ | ⭐⭐⭐⭐ |
-
-#### Canvas 测试方案
-
-**方案 1：Mock 测试（验证调用）**
-```java
-@Test
-void testDrawTask() {
-    GraphicsContext mockGc = mock(GraphicsContext.class);
-    ganttRenderer.drawTask(mockGc, task);
-    
-    // 只能验证调用了什么方法，不能验证画了什么
-    verify(mockGc).fillRect(eq(10.0), eq(20.0), eq(100.0), eq(30.0));
-}
-```
-
-**方案 2：截图对比（视觉回归）**
-```java
-@Test
-void testGanttRender() {
-    WritableImage image = canvas.snapshot(null, null);
-    BufferedImage expected = ImageIO.read(new File("baseline.png"));
-    assertTrue(compareImages(expected, image));
-}
-```
-- 问题：字体渲染差异、抗锯齿差异、CI 环境不一致
-
-#### Scene Graph 测试方案
-
-```java
-@Test
-void testTaskBarDisplayed() {
-    Rectangle taskBar = lookup(".task-bar").query();
-    assertNotNull(taskBar);
-    assertEquals(100, taskBar.getWidth());
-    assertEquals(Color.BLUE, taskBar.getFill());
-}
-```
-
-### 5. 推荐场景
-
-| 需求场景 | 推荐方案 |
-|----------|----------|
-| 需要精细渲染控制（渐变、纹理、自定义形状） | Canvas |
-| 需要丰富交互（点击、拖拽、悬停） | Scene Graph |
-| 大量元素（>1000） | Canvas |
-| **快速开发 MVP** | **Scene Graph** |
-| **重视自动化测试** | **Scene Graph** |
-| 未来可能加复杂渲染 | Canvas |
-
-## 当前决策
-
-**待定**：需要进一步讨论确定最终方案
-
-## 待讨论事项
-
-1. GanttLens 甘特图的预期任务数量规模？
-2. 是否需要视觉回归测试？
-3. 未来是否需要复杂渲染效果（渐变、纹理）？
-4. 开发时间限制？
+| **视觉回归测试** | ⚠️ 截图对比（辅助） | ⚠️ 截图对比（辅助） |
+| **整体可测试性** | ⭐⭐⭐⭐（配合分层架构） | ⭐⭐⭐⭐ |
