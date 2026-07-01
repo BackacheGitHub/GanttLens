@@ -15,5 +15,6 @@ public record Task(
     int durationDays,
     List<Assignment> assignments,
     List<String> dependencyIds,
-    TaskStatus status
+    TaskStatus status,
+    String color
 ) {}

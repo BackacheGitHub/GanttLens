@@ -194,6 +194,17 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             status = TaskStatus.COMPLETED;
         }
 
+        // Handle 'is colored' color extraction
+        String color = null;
+        if (body.IS_COLORED() != null && body.WORD() != null && !body.WORD().isEmpty()) {
+            StringBuilder colorBuilder = new StringBuilder();
+            for (var word : body.WORD()) {
+                if (!colorBuilder.isEmpty()) colorBuilder.append(" ");
+                colorBuilder.append(word.getText());
+            }
+            color = colorBuilder.toString();
+        }
+
         Task task = new Task(
             id,
             name,
@@ -203,7 +214,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             durationDays,
             assignments,
             dependencyIds,
-            status
+            status,
+            color
         );
 
         tasks.add(task);
@@ -252,6 +264,17 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             status = TaskStatus.COMPLETED;
         }
 
+        // Handle 'is colored' color extraction
+        String color = null;
+        if (body.IS_COLORED() != null && body.WORD() != null && !body.WORD().isEmpty()) {
+            StringBuilder colorBuilder = new StringBuilder();
+            for (var word : body.WORD()) {
+                if (!colorBuilder.isEmpty()) colorBuilder.append(" ");
+                colorBuilder.append(word.getText());
+            }
+            color = colorBuilder.toString();
+        }
+
         Task task = new Task(
             id,
             name,
@@ -261,7 +284,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             durationDays,
             assignments,
             dependencyIds,
-            status
+            status,
+            color
         );
 
         tasks.add(task);
@@ -324,7 +348,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             0,
             List.of(),
             dependencyIds,
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         tasks.add(milestone);
@@ -489,7 +514,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 task.durationDays(),
                 task.assignments(),
                 task.dependencyIds(),
-                task.status()
+                task.status(),
+                task.color()
             ));
         }
     }
@@ -506,7 +532,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 task.durationDays(),
                 task.assignments(),
                 newDeps,
-                task.status()
+                task.status(),
+                task.color()
             ));
         }
     }

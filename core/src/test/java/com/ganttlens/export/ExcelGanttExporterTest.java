@@ -158,7 +158,8 @@ class ExcelGanttExporterTest {
             2,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
         Task task2 = new Task(
             "task-2", "开发", null,
@@ -166,7 +167,8 @@ class ExcelGanttExporterTest {
             3,
             List.of(Assignment.fullLoad("张三"), Assignment.withPercent("李四", 50)),
             List.of("设计"),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
         Task task3 = new Task(
             "task-3", "测试", null,
@@ -174,7 +176,8 @@ class ExcelGanttExporterTest {
             2,
             List.of(Assignment.fullLoad("李四")),
             List.of("开发"),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         return new GanttSchedule(

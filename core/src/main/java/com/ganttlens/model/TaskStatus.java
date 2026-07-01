@@ -6,5 +6,6 @@ package com.ganttlens.model;
 public enum TaskStatus {
     PENDING,
     IN_PROGRESS,
-    COMPLETED
+    COMPLETED,
+    BLOCKED
 }

@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.canvas.Canvas?>
 <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
@@ -17,13 +18,31 @@
                 <Menu text="File">
                     <items>
                         <MenuItem text="Open" onAction="#openFile" />
+                        <MenuItem text="Save" onAction="#saveFile" fx:id="saveMenuItem" />
                         <SeparatorMenuItem />
-
+                    </items>
+                </Menu>
+                <Menu text="Edit">
+                    <items>
+                        <MenuItem text="Undo" onAction="#undo" fx:id="undoMenuItem" />
+                        <MenuItem text="Redo" onAction="#redo" fx:id="redoMenuItem" />
                     </items>
                 </Menu>
                 <Menu text="Analyze">
                     <items>
-                        <MenuItem text="Parse &amp; Analyze" onAction="#parseAndAnalyze" />
+                        <MenuItem text="Parse &amp; Analyze" onAction="#parseAndAnalyze" fx:id="parseMenuItem" />
+                    </items>
+                </Menu>
+                <Menu text="View">
+                    <items>
+                        <MenuItem text="Zoom In" onAction="#zoomIn" />
+                        <MenuItem text="Zoom Out" onAction="#zoomOut" />
+                        <MenuItem text="Fit to Window" onAction="#fitToWindow" />
+                    </items>
+                </Menu>
+                <Menu text="Help">
+                    <items>
+                        <MenuItem text="About" onAction="#showAbout" />
                     </items>
                 </Menu>
             </menus>
@@ -43,33 +62,138 @@
 
     <!-- Center: Code Editor + Analysis -->
     <center>
-        <SplitPane dividerPositions="0.5">
+        <SplitPane dividerPositions="0.45">
             <items>
-                <!-- Code Editor -->
+                <!-- Code Editor (middle-left column) -->
                 <VBox>
                     <Label text="PlantUML Code" styleClass="header-label" />
                     <TextArea fx:id="codeArea"
                               VBox.vgrow="ALWAYS"
                               styleClass="code-area"
                               wrapText="true" />
+                    <!-- Bottom buttons: Parse + Save -->
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <padding>
+                            <Insets top="4" right="8" bottom="4" left="8" />
+                        </padding>
+                        <Button text="Parse" onAction="#parseAndAnalyze" styleClass="parse-button" />
+                        <Button text="Save" onAction="#saveFile" styleClass="save-button" />
+                    </HBox>
                 </VBox>
 
-                <!-- Analysis Tabs -->
+                <!-- Analysis Tabs (right column) -->
                 <TabPane fx:id="analysisTabPane">
                     <tabs>
-                        <Tab text="Gantt Chart">
+                        <!-- Gantt Chart Tab -->
+                        <Tab text="Gantt Chart" closable="false">
                             <content>
-                                <Label text="Gantt Chart View - Coming in Iteration 3.2" />
+                                <BorderPane>
+                                    <!-- Toolbar -->
+                                    <top>
+                                        <HBox spacing="6" alignment="CENTER_LEFT">
+                                            <padding>
+                                                <Insets top="4" right="8" bottom="4" left="8" />
+                                            </padding>
+                                            <Button text="Zoom+" onAction="#zoomIn" />
+                                            <Button text="Zoom-" onAction="#zoomOut" />
+                                            <Button text="Fit" onAction="#fitToWindow" />
+                                        </HBox>
+                                    </top>
+                                    <!-- Main content: task list + canvas -->
+                                    <center>
+                                        <SplitPane fx:id="ganttSplitPane" dividerPositions="0.75" orientation="VERTICAL">
+                                            <items>
+                                                <!-- Gantt chart area (horizontal split: labels + canvas) -->
+                                                <SplitPane dividerPositions="0.25">
+                                                    <items>
+                                                        <!-- Left: Task name list -->
+                                                        <VBox>
+                                                            <Label text="Tasks" styleClass="header-label" />
+                                                            <ListView fx:id="taskListView"
+                                                                      VBox.vgrow="ALWAYS" />
+                                                        </VBox>
+                                                        <!-- Right: Canvas Gantt chart -->
+                                                        <ScrollPane fx:id="ganttScrollPane"
+                                                                    VBox.vgrow="ALWAYS">
+                                                            <Canvas fx:id="ganttCanvas"
+                                                                    width="800" height="600" />
+                                                        </ScrollPane>
+                                                    </items>
+                                                </SplitPane>
+                                                <!-- Bottom: Property panel (shown when task selected) -->
+                                                <VBox fx:id="propertyPanel" visible="false" managed="false">
+                                                    <padding>
+                                                        <Insets top="6" right="8" bottom="6" left="8" />
+                                                    </padding>
+                                                    <Label text="Task Properties" styleClass="header-label" />
+                                                    <GridPane hgap="10" vgap="6">
+                                                        <Label text="Name:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                                        <TextField fx:id="propNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" prefWidth="200" />
+                                                        <Label text="Start:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                                        <DatePicker fx:id="propStartDate" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                        <Label text="End:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                                        <DatePicker fx:id="propEndDate" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                        <Label text="Assignee:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                                                        <ComboBox fx:id="propAssigneeCombo" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                                                        <Label text="Progress:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                        <HBox GridPane.columnIndex="3" GridPane.rowIndex="1" spacing="6" alignment="CENTER_LEFT">
+                                                            <Slider fx:id="propProgressSlider" min="0" max="100" value="0" prefWidth="140" />
+                                                            <Label fx:id="propProgressLabel" text="0%" />
+                                                        </HBox>
+                                                    </GridPane>
+                                                </VBox>
+                                            </items>
+                                        </SplitPane>
+                                    </center>
+                                </BorderPane>
                             </content>
                         </Tab>
-                        <Tab text="Workload">
+
+                        <!-- Statistics Tab -->
+                        <Tab text="Statistics" closable="false">
                             <content>
-                                <Label text="Workload Heatmap - Coming in Iteration 3.2" />
+                                <ScrollPane>
+                                    <VBox spacing="12">
+                                        <padding>
+                                            <Insets top="10" right="10" bottom="10" left="10" />
+                                        </padding>
+                                        <!-- Overview cards -->
+                                        <Label text="Project Overview" styleClass="header-label" />
+                                        <HBox spacing="16">
+                                            <VBox alignment="CENTER" styleClass="stat-card">
+                                                <Label fx:id="statTaskCount" text="--" styleClass="stat-value" />
+                                                <Label text="Tasks" styleClass="stat-label" />
+                                            </VBox>
+                                            <VBox alignment="CENTER" styleClass="stat-card">
+                                                <Label fx:id="statManDays" text="--" styleClass="stat-value" />
+                                                <Label text="Man-days" styleClass="stat-label" />
+                                            </VBox>
+                                            <VBox alignment="CENTER" styleClass="stat-card">
+                                                <Label fx:id="statDuration" text="--" styleClass="stat-value" />
+                                                <Label text="Duration (days)" styleClass="stat-label" />
+                                            </VBox>
+                                        </HBox>
+                                        <!-- Critical path -->
+                                        <Label text="Critical Path" styleClass="header-label" />
+                                        <Label fx:id="statCriticalPath" text="No critical path data" wrapText="true" />
+                                        <!-- Overloads -->
+                                        <Label text="Overload Warnings" styleClass="header-label" />
+                                        <VBox fx:id="overloadBox" spacing="4" />
+                                        <!-- Balance Suggestions -->
+                                        <Label text="Balance Suggestions" styleClass="header-label" />
+                                        <VBox fx:id="suggestionBox" spacing="4" />
+                                        <!-- Resource Distribution -->
+                                        <Label text="Resource Distribution" styleClass="header-label" />
+                                        <VBox fx:id="resourceBox" spacing="4" />
+                                    </VBox>
+                                </ScrollPane>
                             </content>
                         </Tab>
-                        <Tab text="Statistics">
+
+                        <!-- Workload Tab (placeholder for future) -->
+                        <Tab text="Workload" closable="false">
                             <content>
-                                <Label text="Statistics Panel - Coming in Iteration 3.2" />
+                                <Label text="Workload Heatmap - Coming Soon" />
                             </content>
                         </Tab>
                     </tabs>

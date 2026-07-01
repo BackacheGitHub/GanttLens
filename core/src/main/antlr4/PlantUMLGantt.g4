@@ -68,7 +68,7 @@ taskGroup
     ;
 
 taskBody
-    : LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? taskResource? taskTiming? (IS_COMPLETED)?
+    : LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? taskResource? taskTiming? (IS_COMPLETED | IS_COLORED WORD+)?
     ;
 
 taskResource
@@ -151,6 +151,7 @@ IS_CLOSED       : 'is' WS1 'closed' ;
 IS_OPEN         : 'is' WS1 'open' ;
 IS_OFF          : 'is' WS1 'off' ;
 IS_COMPLETED    : 'is' WS1 'completed' ;
+IS_COLORED      : 'is' WS1 'colored' ;
 ON              : 'on' ;
 REQUIRES        : 'requires' ;
 LASTS           : 'lasts' ;

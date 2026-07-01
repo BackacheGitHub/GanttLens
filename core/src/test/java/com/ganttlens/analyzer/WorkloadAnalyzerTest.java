@@ -23,7 +23,8 @@ class WorkloadAnalyzerTest {
             3,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -47,7 +48,8 @@ class WorkloadAnalyzerTest {
             1,
             List.of(Assignment.withPercent("李四", 50)),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -70,7 +72,8 @@ class WorkloadAnalyzerTest {
             2,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
         Task taskB = new Task(
             "task-2", "任务B", null,
@@ -78,7 +81,8 @@ class WorkloadAnalyzerTest {
             1,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -113,7 +117,8 @@ class WorkloadAnalyzerTest {
             3,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -139,7 +144,8 @@ class WorkloadAnalyzerTest {
             2,
             List.of(Assignment.fullLoad("张三"), Assignment.fullLoad("李四")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -166,7 +172,8 @@ class WorkloadAnalyzerTest {
             3,
             List.of(Assignment.fullLoad("张三"), Assignment.withPercent("李四", 50)),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -189,7 +196,8 @@ class WorkloadAnalyzerTest {
             1,
             List.of(Assignment.fullLoad("李四")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
         Task taskB = new Task(
             "task-2", "任务B", null,
@@ -197,7 +205,8 @@ class WorkloadAnalyzerTest {
             1,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(

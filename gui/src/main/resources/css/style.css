@@ -27,3 +27,60 @@
 .label {
     -fx-padding: 5px;
 }
+
+/* Parse / Save buttons */
+.parse-button {
+    -fx-background-color: #1976D2;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 4 14;
+    -fx-cursor: hand;
+}
+.parse-button:hover {
+    -fx-background-color: #1565C0;
+}
+
+.save-button {
+    -fx-background-color: #388E3C;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 4 14;
+    -fx-cursor: hand;
+}
+.save-button:hover {
+    -fx-background-color: #2E7D32;
+}
+
+/* Statistics cards */
+.stat-card {
+    -fx-padding: 12 20;
+    -fx-background-color: #F5F5F5;
+    -fx-border-color: #E0E0E0;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-min-width: 120;
+}
+.stat-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1976D2;
+}
+.stat-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #757575;
+}
+
+/* Task list */
+.list-view {
+    -fx-font-size: 12px;
+}
+.list-cell:selected {
+    -fx-background-color: #BBDEFB;
+    -fx-text-fill: black;
+}
+
+/* Property panel */
+.text-field, .date-picker, .combo-box, .slider {
+    -fx-font-size: 12px;
+}

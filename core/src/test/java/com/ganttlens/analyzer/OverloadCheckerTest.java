@@ -20,7 +20,8 @@ class OverloadCheckerTest {
             3,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         Task taskB = new Task(
@@ -29,7 +30,8 @@ class OverloadCheckerTest {
             3,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -57,7 +59,8 @@ class OverloadCheckerTest {
             3,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
@@ -83,7 +86,8 @@ class OverloadCheckerTest {
             3,
             List.of(Assignment.fullLoad("张三")),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         Task taskB = new Task(
@@ -92,7 +96,8 @@ class OverloadCheckerTest {
             3,
             List.of(Assignment.withPercent("张三", 60)),
             List.of(),
-            TaskStatus.PENDING
+            TaskStatus.PENDING,
+            null
         );
 
         GanttSchedule schedule = new GanttSchedule(
