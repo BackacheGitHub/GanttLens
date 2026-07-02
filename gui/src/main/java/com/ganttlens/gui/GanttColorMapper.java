@@ -29,6 +29,11 @@ public final class GanttColorMapper {
     // Today line
     public static final Color TODAY_LINE_COLOR = Color.RED;
 
+    // Row backgrounds and separator
+    private static final Color ROW_BG_EVEN  = Color.WHITE;
+    private static final Color ROW_BG_ODD   = Color.web("#F8F9FA");
+    private static final Color ROW_SEPARATOR = Color.web("#EEEEEE");
+
     private GanttColorMapper() {} // utility class
 
     /**
@@ -74,5 +79,26 @@ public final class GanttColorMapper {
      */
     public static Color gridLineColor() {
         return Color.web("#E0E0E0");
+    }
+
+    /**
+     * Returns the background color for even-indexed rows.
+     */
+    public static Color rowBackgroundEven() {
+        return ROW_BG_EVEN;
+    }
+
+    /**
+     * Returns the background color for odd-indexed rows.
+     */
+    public static Color rowBackgroundOdd() {
+        return ROW_BG_ODD;
+    }
+
+    /**
+     * Returns the color for horizontal row separator lines.
+     */
+    public static Color rowSeparatorColor() {
+        return ROW_SEPARATOR;
     }
 }

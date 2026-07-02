@@ -4,7 +4,7 @@ import com.ganttlens.analyzer.AnalysisEngine;
 import com.ganttlens.analyzer.GanttLayoutEngine;
 import com.ganttlens.model.*;
 import com.ganttlens.parser.GanttFileParser;
-import javafx.collections.FXCollections;
+import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
@@ -16,6 +16,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,23 +37,11 @@ public class MainController {
     // ========== FXML bindings ==========
     @FXML private BorderPane rootPane;
     @FXML private TextArea codeArea;
-    @FXML private TreeView<String> fileTreeView;
     @FXML private TabPane analysisTabPane;
 
     // Gantt Chart tab components
-    @FXML private SplitPane ganttSplitPane;
-    @FXML private ListView<String> taskListView;
     @FXML private Canvas ganttCanvas;
     @FXML private ScrollPane ganttScrollPane;
-
-    // Property panel
-    @FXML private VBox propertyPanel;
-    @FXML private TextField propNameField;
-    @FXML private DatePicker propStartDate;
-    @FXML private DatePicker propEndDate;
-    @FXML private ComboBox<String> propAssigneeCombo;
-    @FXML private Slider propProgressSlider;
-    @FXML private Label propProgressLabel;
 
     // Statistics tab
     @FXML private Label statTaskCount;
@@ -88,7 +77,7 @@ public class MainController {
     private boolean hasUnsavedChanges = false;
     private final ArrayList<Task> mutableTasks = new ArrayList<>();
     private final CommandStack commandStack = new CommandStack();
-    private boolean updatingPropertyPanel = false; // guard against recursive listener fires
+    private PauseTransition resizeDebounce;
 
     // ========== Initialization ==========
 
@@ -108,25 +97,18 @@ public class MainController {
             hoverTooltip.setText("");
         });
 
-        // Set up task list selection sync
-        taskListView.getSelectionModel().selectedItemProperty().addListener(
-            (obs, oldVal, newVal) -> {
-                if (newVal != null && currentSchedule != null && !updatingPropertyPanel) {
-                    String taskName = newVal;
-                    mutableTasks.stream()
-                        .filter(t -> t.name().equals(taskName))
-                        .findFirst()
-                        .ifPresent(t -> selectionModel.selectTask(t.id()));
-                }
-            }
-        );
-
-        // Set up property panel change listeners
-        setupPropertyPanelListeners();
-
         // Set up command stack state listener for undo/redo menu updates
         commandStack.setOnStateChanged(stack -> {
             // Could update menu item disable state here if needed
+        });
+
+        // Set up viewport resize debounce listener
+        resizeDebounce = new PauseTransition(Duration.millis(100));
+        resizeDebounce.setOnFinished(e -> {
+            if (currentSchedule != null) refreshGantt();
+        });
+        ganttScrollPane.viewportBoundsProperty().addListener((obs, oldVal, newVal) -> {
+            resizeDebounce.playFromStart();
         });
 
         // Set keyboard shortcuts
@@ -219,7 +201,6 @@ public class MainController {
             selectionModel.clearSelection();
             renderGantt();
             updateStatistics();
-            updateTaskList();
 
             statusLabel.setText(String.format("Parsed: %d tasks, Total man-days: %.1f",
                 currentSchedule.tasks().size(), currentStats.totalManDays()));
@@ -256,8 +237,8 @@ public class MainController {
             minDate, maxDate,
             pixelsPerDay,
             LayoutConfig.DEFAULT_ROW_HEIGHT,
-            0, // startY (below time axis header)
-            0  // labelColumnWidth (labels are in separate ListView)
+            GanttCanvasView.TIME_AXIS_HEIGHT,
+            LayoutConfig.DEFAULT_LABEL_COLUMN_WIDTH
         );
 
         Set<String> criticalIds = currentStats.criticalPath() != null
@@ -298,7 +279,7 @@ public class MainController {
             minDate, maxDate,
             pixelsPerDay,
             LayoutConfig.DEFAULT_ROW_HEIGHT,
-            0, 0
+            GanttCanvasView.TIME_AXIS_HEIGHT, LayoutConfig.DEFAULT_LABEL_COLUMN_WIDTH
         );
 
         GanttCanvasView canvasView = new GanttCanvasView(ganttCanvas.getWidth(), ganttCanvas.getHeight());
@@ -312,15 +293,7 @@ public class MainController {
         );
     }
 
-    // ========== Task List ==========
 
-    private void updateTaskList() {
-        if (mutableTasks.isEmpty()) return;
-        List<String> names = mutableTasks.stream()
-            .map(Task::name)
-            .collect(Collectors.toList());
-        taskListView.setItems(FXCollections.observableArrayList(names));
-    }
 
     // ========== Interaction Handlers ==========
 
@@ -343,158 +316,9 @@ public class MainController {
     private void onSelectionChanged(Task selectedTask) {
         // Update canvas highlights
         renderGantt();
-
-        // Update task list selection
-        if (selectedTask != null) {
-            int index = mutableTasks.indexOf(selectedTask);
-            if (index >= 0) {
-                taskListView.getSelectionModel().select(index);
-                taskListView.scrollTo(index);
-            }
-            // Show property panel
-            propertyPanel.setVisible(true);
-            propertyPanel.setManaged(true);
-            updatePropertyPanel(selectedTask);
-        } else {
-            taskListView.getSelectionModel().clearSelection();
-            propertyPanel.setVisible(false);
-            propertyPanel.setManaged(false);
-        }
     }
 
-    private void updatePropertyPanel(Task task) {
-        updatingPropertyPanel = true;
-        try {
-            propNameField.setText(task.name());
-            propStartDate.setValue(task.startDate());
-            propEndDate.setValue(task.endDate());
-            propProgressSlider.setValue(
-                task.status() == TaskStatus.COMPLETED ? 100 :
-                task.status() == TaskStatus.IN_PROGRESS ? 50 : 0
-            );
-            propProgressLabel.setText(String.format("%.0f%%", propProgressSlider.getValue()));
 
-            // Populate assignee combo
-            List<String> assignees = task.assignments() != null
-                ? task.assignments().stream().map(Assignment::person).collect(Collectors.toList())
-                : List.of();
-            propAssigneeCombo.setItems(FXCollections.observableArrayList(assignees));
-            if (!assignees.isEmpty()) {
-                propAssigneeCombo.getSelectionModel().select(0);
-            }
-        } finally {
-            updatingPropertyPanel = false;
-        }
-    }
-
-    // ========== Property Panel Editing ==========
-
-    private void setupPropertyPanelListeners() {
-        // Name change
-        propNameField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal && !updatingPropertyPanel) { // on focus lost
-                applyNameChange();
-            }
-        });
-
-        // Start date change
-        propStartDate.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (!updatingPropertyPanel && newVal != null) {
-                applyDateChange(newVal, true);
-            }
-        });
-
-        // End date change
-        propEndDate.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (!updatingPropertyPanel && newVal != null) {
-                applyDateChange(newVal, false);
-            }
-        });
-
-        // Progress slider change
-        propProgressSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            propProgressLabel.setText(String.format("%.0f%%", propProgressSlider.getValue()));
-            if (!updatingPropertyPanel) {
-                applyProgressChange();
-            }
-        });
-    }
-
-    private void applyNameChange() {
-        Task selected = selectionModel.getSelectedTask();
-        if (selected == null) return;
-        String newName = propNameField.getText().trim();
-        if (newName.isEmpty() || newName.equals(selected.name())) return;
-
-        replaceTask(selected, new Task(
-            selected.id(), newName, selected.group(),
-            selected.startDate(), selected.endDate(), selected.durationDays(),
-            selected.assignments(), selected.dependencyIds(),
-            selected.status(), selected.color()
-        ), "Edit task name");
-    }
-
-    private void applyDateChange(LocalDate newDate, boolean isStart) {
-        Task selected = selectionModel.getSelectedTask();
-        if (selected == null) return;
-
-        LocalDate newStart = isStart ? newDate : selected.startDate();
-        LocalDate newEnd = isStart ? selected.endDate() : newDate;
-
-        // Validate: start must be before end
-        if (newStart != null && newEnd != null && newStart.isAfter(newEnd)) return;
-
-        int newDuration = (newStart != null && newEnd != null)
-            ? (int) ChronoUnit.DAYS.between(newStart, newEnd) + 1
-            : selected.durationDays();
-
-        replaceTask(selected, new Task(
-            selected.id(), selected.name(), selected.group(),
-            newStart, newEnd, newDuration,
-            selected.assignments(), selected.dependencyIds(),
-            selected.status(), selected.color()
-        ), "Edit task date");
-    }
-
-    private void applyProgressChange() {
-        Task selected = selectionModel.getSelectedTask();
-        if (selected == null) return;
-
-        double value = propProgressSlider.getValue();
-        TaskStatus newStatus;
-        if (value >= 100) {
-            newStatus = TaskStatus.COMPLETED;
-        } else if (value > 0) {
-            newStatus = TaskStatus.IN_PROGRESS;
-        } else {
-            newStatus = TaskStatus.PENDING;
-        }
-
-        if (newStatus == selected.status()) return;
-
-        replaceTask(selected, new Task(
-            selected.id(), selected.name(), selected.group(),
-            selected.startDate(), selected.endDate(), selected.durationDays(),
-            selected.assignments(), selected.dependencyIds(),
-            newStatus, selected.color()
-        ), "Edit task progress");
-    }
-
-    private void replaceTask(Task oldTask, Task newTask, String description) {
-        EditTaskCommand cmd = new EditTaskCommand(mutableTasks, oldTask, newTask, description);
-        commandStack.push(cmd);
-
-        hasUnsavedChanges = true;
-
-        // Update dependent data
-        interactionHandler.setData(currentLayouts, mutableTasks);
-        selectionModel.setTasks(mutableTasks);
-        selectionModel.selectTask(newTask.id()); // re-select to refresh panel
-
-        refreshGantt();
-        updateTaskList();
-        updateStatusMark();
-    }
 
     // ========== Statistics Tab ==========
 
@@ -625,7 +449,6 @@ public class MainController {
                 selectionModel.selectTask(selected.id());
             }
             refreshGantt();
-            updateTaskList();
             updateStatusMark();
             statusLabel.setText("Undo: " + commandStack.peekRedoDescription());
         }
@@ -642,7 +465,6 @@ public class MainController {
                 selectionModel.selectTask(selected.id());
             }
             refreshGantt();
-            updateTaskList();
             updateStatusMark();
             statusLabel.setText("Redo: " + commandStack.peekUndoDescription());
         }

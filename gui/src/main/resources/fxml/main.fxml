@@ -49,16 +49,6 @@
         </MenuBar>
     </top>
 
-    <!-- Left Panel: File Tree -->
-    <left>
-        <VBox prefWidth="200">
-            <padding>
-                <Insets top="5" right="5" bottom="5" left="5" />
-            </padding>
-            <Label text="Files" styleClass="header-label" />
-            <TreeView fx:id="fileTreeView" VBox.vgrow="ALWAYS" />
-        </VBox>
-    </left>
 
     <!-- Center: Code Editor + Analysis -->
     <center>
@@ -99,51 +89,13 @@
                                             <Button text="Fit" onAction="#fitToWindow" />
                                         </HBox>
                                     </top>
-                                    <!-- Main content: task list + canvas -->
+                                    <!-- Main content: Canvas only (labels rendered in Canvas) -->
                                     <center>
-                                        <SplitPane fx:id="ganttSplitPane" dividerPositions="0.75" orientation="VERTICAL">
-                                            <items>
-                                                <!-- Gantt chart area (horizontal split: labels + canvas) -->
-                                                <SplitPane dividerPositions="0.25">
-                                                    <items>
-                                                        <!-- Left: Task name list -->
-                                                        <VBox>
-                                                            <Label text="Tasks" styleClass="header-label" />
-                                                            <ListView fx:id="taskListView"
-                                                                      VBox.vgrow="ALWAYS" />
-                                                        </VBox>
-                                                        <!-- Right: Canvas Gantt chart -->
-                                                        <ScrollPane fx:id="ganttScrollPane"
-                                                                    VBox.vgrow="ALWAYS">
-                                                            <Canvas fx:id="ganttCanvas"
-                                                                    width="800" height="600" />
-                                                        </ScrollPane>
-                                                    </items>
-                                                </SplitPane>
-                                                <!-- Bottom: Property panel (shown when task selected) -->
-                                                <VBox fx:id="propertyPanel" visible="false" managed="false">
-                                                    <padding>
-                                                        <Insets top="6" right="8" bottom="6" left="8" />
-                                                    </padding>
-                                                    <Label text="Task Properties" styleClass="header-label" />
-                                                    <GridPane hgap="10" vgap="6">
-                                                        <Label text="Name:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                                        <TextField fx:id="propNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" prefWidth="200" />
-                                                        <Label text="Start:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                                        <DatePicker fx:id="propStartDate" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                        <Label text="End:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                                        <DatePicker fx:id="propEndDate" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                        <Label text="Assignee:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
-                                                        <ComboBox fx:id="propAssigneeCombo" GridPane.columnIndex="3" GridPane.rowIndex="0" />
-                                                        <Label text="Progress:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                                        <HBox GridPane.columnIndex="3" GridPane.rowIndex="1" spacing="6" alignment="CENTER_LEFT">
-                                                            <Slider fx:id="propProgressSlider" min="0" max="100" value="0" prefWidth="140" />
-                                                            <Label fx:id="propProgressLabel" text="0%" />
-                                                        </HBox>
-                                                    </GridPane>
-                                                </VBox>
-                                            </items>
-                                        </SplitPane>
+                                        <ScrollPane fx:id="ganttScrollPane"
+                                                    fitToHeight="true">
+                                            <Canvas fx:id="ganttCanvas"
+                                                    width="800" height="600" />
+                                        </ScrollPane>
                                     </center>
                                 </BorderPane>
                             </content>

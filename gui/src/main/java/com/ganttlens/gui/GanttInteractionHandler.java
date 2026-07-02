@@ -110,8 +110,7 @@ public class GanttInteractionHandler {
             sb.append("\nAssignee: ").append(assignees);
         }
 
-        sb.append("\nProgress: ").append(task.status() == com.ganttlens.model.TaskStatus.COMPLETED ? "100%" :
-            task.status() == com.ganttlens.model.TaskStatus.IN_PROGRESS ? "50%" : "0%");
+        sb.append("\nProgress: ").append(task.progressPercent()).append("%");
 
         return sb.toString();
     }

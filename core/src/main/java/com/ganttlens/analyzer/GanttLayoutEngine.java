@@ -29,9 +29,28 @@ public class GanttLayoutEngine {
         Set<String> critSet = criticalIds != null ? criticalIds : Set.of();
         List<TaskLayout> layouts = new ArrayList<>(tasks.size());
 
+        double groupHeaderHeight = 24.0;
+        String currentGroup = null;
+        double yOffset = 0;
+
         for (int i = 0; i < tasks.size(); i++) {
             Task task = tasks.get(i);
-            double y = config.startY() + i * config.rowHeight();
+
+            // Insert group header when group changes
+            if (task.group() != null && !task.group().equals(currentGroup)) {
+                currentGroup = task.group();
+                double fullWidth = config.labelColumnWidth()
+                    + (java.time.temporal.ChronoUnit.DAYS.between(config.startDate(), config.endDate()) + 1) * config.pixelsPerDay();
+                layouts.add(TaskLayout.groupHeader(
+                    currentGroup,
+                    config.startY() + yOffset,
+                    groupHeaderHeight,
+                    fullWidth
+                ));
+                yOffset += groupHeaderHeight;
+            }
+
+            double y = config.startY() + yOffset;
 
             double x = 0;
             double width = 0;
@@ -45,19 +64,18 @@ public class GanttLayoutEngine {
             }
 
             double progressWidth = 0;
-            if (task.status() == TaskStatus.COMPLETED) {
-                progressWidth = width;
-            } else if (task.status() == TaskStatus.IN_PROGRESS && task.durationDays() > 0) {
-                // Assume 50% progress for IN_PROGRESS if no other info
-                progressWidth = width * 0.5;
+            if (task.progressPercent() > 0 && width > 0) {
+                progressWidth = width * task.progressPercent() / 100.0;
             }
 
             layouts.add(new TaskLayout(
                 task.id(),
                 x, y, width, config.rowHeight(),
                 progressWidth,
-                critSet.contains(task.id())
+                critSet.contains(task.id()),
+                task.durationDays() == 0
             ));
+            yOffset += config.rowHeight();
         }
 
         return layouts;
@@ -123,5 +141,74 @@ public class GanttLayoutEngine {
         double width = config.labelColumnWidth() + maxX + config.pixelsPerDay() * 2; // padding
         double height = config.startY() + tasks.size() * config.rowHeight() + config.rowHeight(); // extra row for header
         return new double[]{ width, height };
+    }
+
+    /**
+     * Computes alternating row style flags for zebra-striping.
+     * Returns a boolean array where {@code true} means "even" (index 0, 2, 4...)
+     * and {@code false} means "odd" (index 1, 3, 5...).
+     *
+     * @param taskCount number of tasks (rows)
+     * @return boolean array of length taskCount; empty array if taskCount is 0
+     */
+    public boolean[] computeRowStyles(int taskCount) {
+        if (taskCount <= 0) return new boolean[0];
+        boolean[] styles = new boolean[taskCount];
+        for (int i = 0; i < taskCount; i++) {
+            styles[i] = (i % 2 == 0);
+        }
+        return styles;
+    }
+
+    /**
+     * Computes the diamond (rhombus) shape vertices for a milestone marker.
+     * Returns 8 double values: [topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY].
+     *
+     * @param centerX horizontal center of the diamond
+     * @param centerY vertical center of the diamond
+     * @param size    half-width/height of the diamond (radius)
+     * @return array of 8 doubles representing 4 vertices
+     */
+    public double[] computeMilestoneShape(double centerX, double centerY, double size) {
+        return new double[]{
+            centerX,        centerY - size,  // top
+            centerX + size, centerY,         // right
+            centerX,        centerY + size,  // bottom
+            centerX - size, centerY          // left
+        };
+    }
+
+    /**
+     * Computes an orthogonal (L/Z-shaped) arrow path between two task layouts.
+     * Returns an array of {@code [x, y]} coordinate pairs describing the polyline.
+     *
+     * <ul>
+     *   <li>Same row: 2 points (straight horizontal line)</li>
+     *   <li>Cross row: 4 points (Z-shaped bend avoiding intermediate rows)</li>
+     * </ul>
+     *
+     * @param from source task layout
+     * @param to   target task layout
+     * @return array of [x,y] coordinate pairs
+     */
+    public double[][] computeArrowPath(TaskLayout from, TaskLayout to) {
+        double startX = from.x() + from.width();
+        double startY = from.y() + from.height() / 2.0;
+        double endX = to.x();
+        double endY = to.y() + to.height() / 2.0;
+
+        // Same row: straight horizontal line
+        if (Math.abs(from.y() - to.y()) < 0.001) {
+            return new double[][]{ {startX, startY}, {endX, endY} };
+        }
+
+        // Cross row: Z-shaped orthogonal path
+        double midX = startX + 8; // 8px horizontal offset from source right edge
+        return new double[][]{
+            {startX, startY},
+            {midX,   startY},
+            {midX,   endY},
+            {endX,   endY}
+        };
     }
 }

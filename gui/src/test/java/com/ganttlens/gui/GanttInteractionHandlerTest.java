@@ -156,6 +156,28 @@ class GanttInteractionHandlerTest {
         assertThat(result.get()).contains("0%");
     }
 
+    @Test
+    void tooltip_showsActualProgressPercent() {
+        // Create a task with explicit progressPercent=75
+        Task customTask = new Task("t10", "Custom", null,
+            LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 5), 5,
+            List.of(), List.of(), TaskStatus.IN_PROGRESS, null, 75);
+
+        LayoutConfig cfg = new LayoutConfig(
+            LocalDate.of(2026, 6, 29), LocalDate.of(2026, 7, 17),
+            30.0, 30.0, 0, 0
+        );
+        List<TaskLayout> customLayouts = layoutEngine.computeLayout(List.of(customTask), Set.of(), cfg);
+        selectionModel.setTasks(List.of(customTask));
+        handler.setData(customLayouts, List.of(customTask));
+
+        TaskLayout tl = customLayouts.get(0);
+        var result = handler.handleHover(tl.x() + tl.width() / 2, tl.y() + tl.height() / 2);
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).contains("75%");
+    }
+
     // ========== Integration: selection model callback ==========
 
     @Test

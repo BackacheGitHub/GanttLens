@@ -232,4 +232,256 @@ class GanttLayoutEngineTest {
         assertThat(size[0]).isEqualTo(config.labelColumnWidth());
         assertThat(size[1]).isEqualTo(config.rowHeight());
     }
+
+    // ========== Task 1: Label Column Width ==========
+
+    @Test
+    void computeLayout_withLabelColumnWidth_taskXIncludesOffset() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = new LayoutConfig(start, end, 30.0, 30.0, 0, 150.0);
+
+        Task task = makeTask("t1", "Task A", start, end, 5);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        assertThat(layouts).hasSize(1);
+        assertThat(layouts.get(0).x()).isGreaterThanOrEqualTo(150.0);
+    }
+
+    @Test
+    void hitTest_inLabelColumn_returnsEmpty() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = new LayoutConfig(start, end, 30.0, 30.0, 0, 150.0);
+
+        Task task = makeTask("t1", "Task A", start, end, 5);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        // Click in the label column area (x < labelColumnWidth)
+        Optional<String> hit = engine.hitTest(50, 15, layouts);
+        assertThat(hit).isEmpty();
+    }
+
+    // ========== Task 2: Time Axis Fixed at Top ==========
+
+    @Test
+    void computeLayout_withStartY20_firstTaskYEquals20() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = new LayoutConfig(start, end, 30.0, 30.0, 20.0, 150.0);
+
+        Task task = makeTask("t1", "Task A", start, end, 5);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        assertThat(layouts.get(0).y()).isEqualTo(20.0);
+    }
+
+    // ========== Task 3: Row Styles ==========
+
+    @Test
+    void computeRowStyles_alternatingPattern() {
+        boolean[] styles = engine.computeRowStyles(4);
+        assertThat(styles).containsExactly(true, false, true, false);
+    }
+
+    @Test
+    void computeRowStyles_zeroTasks_returnsEmpty() {
+        boolean[] styles = engine.computeRowStyles(0);
+        assertThat(styles).isEmpty();
+    }
+
+    // ========== Task 5: Arrow Path ==========
+
+    @Test
+    void computeArrowPath_sameRow_straightLine() {
+        TaskLayout from = new TaskLayout("t1", 100, 30, 80, 30, 0, false);
+        TaskLayout to   = new TaskLayout("t2", 200, 30, 80, 30, 0, false);
+
+        double[][] path = engine.computeArrowPath(from, to);
+
+        assertThat(path).hasNumberOfRows(2);
+        // Start at right edge of from
+        assertThat(path[0][0]).isEqualTo(180.0);
+        assertThat(path[0][1]).isEqualTo(45.0); // y mid
+        // End at left edge of to
+        assertThat(path[1][0]).isEqualTo(200.0);
+        assertThat(path[1][1]).isEqualTo(45.0);
+    }
+
+    @Test
+    void computeArrowPath_crossRow_orthogonalBend() {
+        TaskLayout from = new TaskLayout("t1", 100, 30, 80, 30, 0, false);
+        TaskLayout to   = new TaskLayout("t3", 50,  90, 80, 30, 0, false);
+
+        double[][] path = engine.computeArrowPath(from, to);
+
+        assertThat(path).hasNumberOfRows(4);
+        // Start at right edge of from
+        assertThat(path[0][0]).isEqualTo(180.0);
+        assertThat(path[0][1]).isEqualTo(45.0);
+        // Horizontal offset 8px
+        assertThat(path[1][0]).isEqualTo(188.0);
+        assertThat(path[1][1]).isEqualTo(45.0);
+        // Vertical to target Y
+        assertThat(path[2][0]).isEqualTo(188.0);
+        assertThat(path[2][1]).isEqualTo(105.0);
+        // Horizontal to target left edge
+        assertThat(path[3][0]).isEqualTo(50.0);
+        assertThat(path[3][1]).isEqualTo(105.0);
+    }
+
+    // ========== Task 6: Milestone ==========
+
+    @Test
+    void computeMilestoneShape_returnsDiamondPoints() {
+        double[] shape = engine.computeMilestoneShape(100, 50, 8);
+
+        assertThat(shape).hasSize(8);
+        // Top
+        assertThat(shape[0]).isEqualTo(100.0);
+        assertThat(shape[1]).isEqualTo(42.0);
+        // Right
+        assertThat(shape[2]).isEqualTo(108.0);
+        assertThat(shape[3]).isEqualTo(50.0);
+        // Bottom
+        assertThat(shape[4]).isEqualTo(100.0);
+        assertThat(shape[5]).isEqualTo(58.0);
+        // Left
+        assertThat(shape[6]).isEqualTo(92.0);
+        assertThat(shape[7]).isEqualTo(50.0);
+    }
+
+    @Test
+    void computeLayout_zeroDuration_marksAsMilestone() {
+        LocalDate date = LocalDate.of(2026, 7, 1);
+        LayoutConfig config = defaultConfig(date, date.plusDays(5));
+
+        Task milestone = new Task("m1", "Release", null, date, date, 0,
+            List.of(), List.of(), TaskStatus.PENDING, null);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(milestone), Set.of(), config);
+
+        assertThat(layouts.get(0).isMilestone()).isTrue();
+    }
+
+    @Test
+    void computeLayout_nonDuration_notMilestone() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = defaultConfig(start, end);
+
+        Task task = makeTask("t1", "Task A", start, end, 5);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        assertThat(layouts.get(0).isMilestone()).isFalse();
+    }
+
+    // ========== Task 7: Group Headers ==========
+
+    @Test
+    void computeLayout_withGroups_insertsGroupHeaders() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 10);
+        LayoutConfig config = defaultConfig(start, end);
+
+        List<Task> tasks = List.of(
+            new Task("t1", "A", "Phase1", start, start.plusDays(2), 3,
+                List.of(), List.of(), TaskStatus.PENDING, null),
+            new Task("t2", "B", "Phase1", start.plusDays(3), start.plusDays(5), 3,
+                List.of(), List.of(), TaskStatus.PENDING, null),
+            new Task("t3", "C", "Phase2", start.plusDays(6), end, 5,
+                List.of(), List.of(), TaskStatus.PENDING, null)
+        );
+
+        List<TaskLayout> layouts = engine.computeLayout(tasks, Set.of(), config);
+
+        // Should have 3 tasks + 2 group headers = 5 layouts
+        long groupHeaders = layouts.stream().filter(TaskLayout::isGroupHeader).count();
+        assertThat(groupHeaders).isEqualTo(2);
+
+        // First entry should be a group header
+        assertThat(layouts.get(0).isGroupHeader()).isTrue();
+        assertThat(layouts.get(0).groupLabel()).isEqualTo("Phase1");
+
+        // Second task should come after the group header
+        TaskLayout firstTask = layouts.stream()
+            .filter(l -> !l.isGroupHeader())
+            .findFirst().orElseThrow();
+        assertThat(firstTask.y()).isGreaterThan(layouts.get(0).y());
+    }
+
+    @Test
+    void computeLayout_noGroups_noGroupHeaders() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 10);
+        LayoutConfig config = defaultConfig(start, end);
+
+        List<Task> tasks = List.of(
+            makeTask("t1", "A", start, start.plusDays(2), 3),
+            makeTask("t2", "B", start.plusDays(3), start.plusDays(5), 3)
+        );
+
+        List<TaskLayout> layouts = engine.computeLayout(tasks, Set.of(), config);
+
+        long groupHeaders = layouts.stream().filter(TaskLayout::isGroupHeader).count();
+        assertThat(groupHeaders).isEqualTo(0);
+        assertThat(layouts).hasSize(2);
+    }
+
+    // ========== Task 8: Progress Percentage ==========
+
+    @Test
+    void computeLayout_progressPercent0_progressWidthZero() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = defaultConfig(start, end);
+
+        Task task = new Task("t1", "Pending", null, start, end, 5,
+            List.of(), List.of(), TaskStatus.PENDING, null, 0);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        assertThat(layouts.get(0).progressWidth()).isEqualTo(0.0);
+    }
+
+    @Test
+    void computeLayout_progressPercent75_correctWidth() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = defaultConfig(start, end);
+
+        Task task = new Task("t1", "WIP", null, start, end, 5,
+            List.of(), List.of(), TaskStatus.IN_PROGRESS, null, 75);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        double expectedWidth = layouts.get(0).width() * 0.75;
+        assertThat(layouts.get(0).progressWidth())
+            .isCloseTo(expectedWidth, org.assertj.core.data.Offset.offset(0.01));
+    }
+
+    @Test
+    void computeLayout_completed_progressEqualsWidth() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = defaultConfig(start, end);
+
+        Task task = new Task("t1", "Done", null, start, end, 5,
+            List.of(), List.of(), TaskStatus.COMPLETED, null, 100);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        assertThat(layouts.get(0).progressWidth()).isEqualTo(layouts.get(0).width());
+    }
+
+    @Test
+    void computeLayout_progressPercent30_correctWidth() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = defaultConfig(start, end);
+
+        Task task = new Task("t1", "Early", null, start, end, 5,
+            List.of(), List.of(), TaskStatus.IN_PROGRESS, null, 30);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        double expectedWidth = layouts.get(0).width() * 0.30;
+        assertThat(layouts.get(0).progressWidth())
+            .isCloseTo(expectedWidth, org.assertj.core.data.Offset.offset(0.01));
+    }
 }
