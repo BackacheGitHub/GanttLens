@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### 新增
+- **JaCoCo 测试覆盖率报告**：运行 `mvn test` 后自动生成 HTML/XML/CSV 报告，排除 ANTLR 生成代码
+  - 报告位置：各模块 `target/site/jacoco/index.html`
+
 ## [1.0.0] - 2026-06-30
 
 ### 新增

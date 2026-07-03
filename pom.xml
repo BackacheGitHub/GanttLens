@@ -32,6 +32,7 @@
         <assertj.version>3.25.3</assertj.version>
         <poi.version>5.2.5</poi.version>
         <log4j2.version>2.21.1</log4j2.version>
+        <jacoco.version>0.8.12</jacoco.version>
     </properties>
 
     <dependencyManagement>
@@ -101,8 +102,48 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.2.5</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/generated-sources/**</exclude>
+                        <exclude>PlantUMLGanttLexer*</exclude>
+                        <exclude>PlantUMLGanttParser*</exclude>
+                        <exclude>PlantUMLGanttBaseListener*</exclude>
+                        <exclude>PlantUMLGanttBaseVisitor*</exclude>
+                        <exclude>com/ganttlens/parser/PlantUMLGanttLexer*</exclude>
+                        <exclude>com/ganttlens/parser/PlantUMLGanttParser*</exclude>
+                        <exclude>com/ganttlens/parser/PlantUMLGanttBaseListener*</exclude>
+                        <exclude>com/ganttlens/parser/PlantUMLGanttBaseVisitor*</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
 </project>
