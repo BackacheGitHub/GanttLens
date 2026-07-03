@@ -8,8 +8,12 @@
 ## [Unreleased]
 
 ### 新增
+- **`is X% complete` 部分进度语法**：支持标准 PlantUML 进度标记，如 `[设计] is 60% complete`
 - **JaCoCo 测试覆盖率报告**：运行 `mvn test` 后自动生成 HTML/XML/CSV 报告，排除 ANTLR 生成代码
   - 报告位置：各模块 `target/site/jacoco/index.html`
+
+### 改进
+- **GUI 默认示例**：首次打开即可看到进度填充、人员分配、分组等核心维度
 
 ## [1.0.0] - 2026-06-30
 

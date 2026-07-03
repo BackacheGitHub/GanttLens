@@ -120,14 +120,18 @@ public class MainController {
         // Set default content
         codeArea.setText("""
             @startgantt
+            title Sample Project
             project starts 2026-07-01
             saturday are closed
             sunday are closed
 
-            [Requirements] lasts 5 days
-            [Design] starts at [Requirements]'s end lasts 3 days
-            [Coding] starts at [Design]'s end lasts 7 days
-            [Testing] starts at [Coding]'s end lasts 4 days
+            -- Phase 1 Planning --
+            [Requirements] on {Alice} lasts 3 days is completed
+            [Design] on {Bob:50%} starts at [Requirements]'s end lasts 4 days is 60% complete
+
+            -- Phase 2 Build --
+            [Coding] on {Alice:80%} {Bob:80%} starts at [Design]'s end lasts 5 days
+            [Testing] on {Charlie} starts at [Coding]'s end lasts 3 days
 
             Release happens at [Testing]'s end
             @endgantt
@@ -193,9 +197,10 @@ public class MainController {
             currentSchedule = parser.parse(content);
             currentStats = engine.analyze(currentSchedule);
 
-            computeLayout();
+            // Populate mutableTasks BEFORE computing layout
             mutableTasks.clear();
             mutableTasks.addAll(currentSchedule.tasks());
+            computeLayout();
             interactionHandler.setData(currentLayouts, mutableTasks);
             selectionModel.setTasks(mutableTasks);
             selectionModel.clearSelection();
@@ -261,6 +266,11 @@ public class MainController {
             return;
         }
 
+        // snapshot() requires FX application thread — skip if not available (e.g., during test init)
+        if (!javafx.application.Platform.isFxApplicationThread()) {
+            return;
+        }
+
         List<Task> tasks = mutableTasks;
         LocalDate minDate = tasks.stream()
             .map(Task::startDate)
@@ -314,8 +324,12 @@ public class MainController {
     }
 
     private void onSelectionChanged(Task selectedTask) {
-        // Update canvas highlights
-        renderGantt();
+        // Update canvas highlights — defer if not on FX thread (e.g., during initialization)
+        if (javafx.application.Platform.isFxApplicationThread()) {
+            renderGantt();
+        } else {
+            javafx.application.Platform.runLater(this::renderGantt);
+        }
     }
 
 
@@ -493,10 +507,18 @@ public class MainController {
     }
 
     private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        if (!javafx.application.Platform.isFxApplicationThread()) {
+            System.err.println("[GanttLens Error] " + message);
+            return;
+        }
+        try {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        } catch (Exception e) {
+            System.err.println("[GanttLens Error] " + message);
+        }
     }
 }

@@ -2,6 +2,9 @@
 
 GanttLens 支持的 PlantUML 甘特图语法。
 
+> GanttLens 支持 PlantUML Gantt 语法的子集。完整语法请参考
+> [PlantUML 官方甘特图文档](https://plantuml.com/gantt-diagram)。
+
 ## 基本结构
 
 ```plantuml
@@ -168,6 +171,13 @@ sunday are closed
 ```plantuml
 [设计] lasts 5 days is completed
 [编码] lasts 10 days
+```
+
+### 部分进度
+
+```plantuml
+[设计] lasts 5 days is 60% complete
+[编码] lasts 10 days is 30% complete
 ```
 
 ## 注释

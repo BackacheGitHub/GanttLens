@@ -34,25 +34,9 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
 
     @Override
     public Void visitGanttFile(PlantUMLGanttParser.GanttFileContext ctx) {
-        // Visit directives
-        for (PlantUMLGanttParser.DirectiveContext directive : ctx.directive()) {
-            visit(directive);
-        }
-        // Visit task group directives
-        for (PlantUMLGanttParser.TaskGroupDirectiveContext tg : ctx.taskGroupDirective()) {
-            visitTaskGroupDirective(tg);
-        }
-        // Visit tasks (regular, arrow dependencies, then tasks, milestones)
+        // Visit all children in source order to preserve task group grouping
         for (ParseTree child : ctx.children) {
-            if (child instanceof PlantUMLGanttParser.TaskContext task) {
-                visit(task);
-            } else if (child instanceof PlantUMLGanttParser.ArrowDependencyContext arrow) {
-                visitArrowDependency(arrow);
-            } else if (child instanceof PlantUMLGanttParser.ThenTaskContext then) {
-                visitThenTask(then);
-            } else if (child instanceof PlantUMLGanttParser.MilestoneContext milestone) {
-                visitMilestone(milestone);
-            }
+            visit(child);
         }
         return null;
     }
@@ -188,15 +172,26 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             }
         }
 
-        // Handle 'is completed' status
+        // Handle 'is completed' / 'is X% complete' status
         TaskStatus status = TaskStatus.PENDING;
-        if (body.IS_COMPLETED() != null) {
+        int progressPercent = 0;
+        if (!body.IS_COMPLETED().isEmpty()) {
             status = TaskStatus.COMPLETED;
+            progressPercent = 100;
+        }
+        if (!body.partialComplete().isEmpty()) {
+            var pc = body.partialComplete().get(0);
+            String firstWord = pc.WORD(0).getText();
+            String lastWord = pc.WORD(1).getText();
+            if ("is".equals(firstWord) && "complete".equals(lastWord)) {
+                progressPercent = Integer.parseInt(pc.INTEGER().getText());
+                status = TaskStatus.IN_PROGRESS;
+            }
         }
 
         // Handle 'is colored' color extraction
         String color = null;
-        if (body.IS_COLORED() != null && body.WORD() != null && !body.WORD().isEmpty()) {
+        if (!body.IS_COLORED().isEmpty() && !body.WORD().isEmpty()) {
             StringBuilder colorBuilder = new StringBuilder();
             for (var word : body.WORD()) {
                 if (!colorBuilder.isEmpty()) colorBuilder.append(" ");
@@ -215,7 +210,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             assignments,
             dependencyIds,
             status,
-            color
+            color,
+            progressPercent
         );
 
         tasks.add(task);
@@ -258,15 +254,26 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             }
         }
 
-        // Handle 'is completed' status
+        // Handle 'is completed' / 'is X% complete' status
         TaskStatus status = TaskStatus.PENDING;
-        if (body.IS_COMPLETED() != null) {
+        int progressPercent = 0;
+        if (!body.IS_COMPLETED().isEmpty()) {
             status = TaskStatus.COMPLETED;
+            progressPercent = 100;
+        }
+        if (!body.partialComplete().isEmpty()) {
+            var pc = body.partialComplete().get(0);
+            String firstWord = pc.WORD(0).getText();
+            String lastWord = pc.WORD(1).getText();
+            if ("is".equals(firstWord) && "complete".equals(lastWord)) {
+                progressPercent = Integer.parseInt(pc.INTEGER().getText());
+                status = TaskStatus.IN_PROGRESS;
+            }
         }
 
         // Handle 'is colored' color extraction
         String color = null;
-        if (body.IS_COLORED() != null && body.WORD() != null && !body.WORD().isEmpty()) {
+        if (!body.IS_COLORED().isEmpty() && !body.WORD().isEmpty()) {
             StringBuilder colorBuilder = new StringBuilder();
             for (var word : body.WORD()) {
                 if (!colorBuilder.isEmpty()) colorBuilder.append(" ");
@@ -285,7 +292,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             assignments,
             dependencyIds,
             status,
-            color
+            color,
+            progressPercent
         );
 
         tasks.add(task);
@@ -515,7 +523,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 task.assignments(),
                 task.dependencyIds(),
                 task.status(),
-                task.color()
+                task.color(),
+                task.progressPercent()
             ));
         }
     }
@@ -533,7 +542,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 task.assignments(),
                 newDeps,
                 task.status(),
-                task.color()
+                task.color(),
+                task.progressPercent()
             ));
         }
     }

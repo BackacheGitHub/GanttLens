@@ -68,7 +68,11 @@ taskGroup
     ;
 
 taskBody
-    : LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? taskResource? taskTiming? (IS_COMPLETED | IS_COLORED WORD+)?
+    : LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? taskResource? taskTiming? (IS_COMPLETED | partialComplete | IS_COLORED WORD+)*
+    ;
+
+partialComplete
+    : WORD INTEGER PERCENT WORD
     ;
 
 taskResource

@@ -254,11 +254,11 @@ public class GanttCanvasView extends Canvas {
             } else {
                 if (tl.width() <= 0) continue;
 
-                // Main bar (background color)
-                gc.setFill(barColor);
+                // Unfilled portion of bar (light gray background)
+                gc.setFill(Color.web("#E0E0E0"));
                 gc.fillRoundRect(tl.x(), barY, tl.width(), barHeight, 4, 4);
 
-                // Progress fill
+                // Progress fill (colored portion)
                 if (tl.progressWidth() > 0) {
                     Color fillColor = GanttColorMapper.progressColor(task.status());
                     gc.setFill(fillColor);
@@ -288,10 +288,13 @@ public class GanttCanvasView extends Canvas {
 
                 // Task name on bar (if wide enough)
                 if (tl.width() > 50) {
-                    gc.setFill(Color.WHITE);
                     gc.setFont(Font.font(11));
                     String name = task.name();
                     if (name.length() > 15) name = name.substring(0, 14) + "...";
+                    // Use white text on colored progress fill, dark text on gray background
+                    double textEndX = tl.x() + 4 + name.length() * 6.5;
+                    boolean textOnFill = tl.progressWidth() > 0 && textEndX <= tl.x() + tl.progressWidth();
+                    gc.setFill(textOnFill ? Color.WHITE : Color.web("#424242"));
                     gc.fillText(name, tl.x() + 4, barY + barHeight / 2 + 4);
                 }
             }
