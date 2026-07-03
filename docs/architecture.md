@@ -1,492 +1,286 @@
-# GanttLens 架构草案
+# GanttLens 架构文档
 
-## 1. 项目命名
+## 1. 项目概述
 
-### 1.1 名称
+**GanttLens** 是 PlantUML 甘特图的分析增强工具，解析 `.puml` 文件中的排期信息，提供人力统计、负载分析、关键路径检测和资源平衡建议。
 
-**GanttLens**
-
-- "Gantt" = 甘特图，明确产品领域
-- "Lens" = 透镜/洞察，表达"分析、洞察排期数据"的定位
-
-### 1.2 命名由来
-
-| 考虑因素 | 说明 |
-|----------|------|
-| **不包含 "PlantUML"** | PlantUML 是注册商标，使用可能产生侵权风险 |
-| **不包含 "Puml"** | "Puml" 是 PlantUML 的缩写，同样有商标风险 |
-| **简短好记** | 两个音节，便于传播 |
-| **域名友好** | ganttlens.com 等域名可用 |
-| **GitHub 友好** | github.com/xxx/ganttlens 搜索友好 |
-
-### 1.3 声明方式
-
-在文档和 README 中使用以下声明（而非暗示官方授权）：
+核心理念：**用 PlantUML 写排期，用 GanttLens 看人力。**
 
 > GanttLens is an independent analysis tool that supports a subset of PlantUML Gantt syntax.
 > GanttLens is not affiliated with or endorsed by PlantUML.
 
-### 1.4 Maven 坐标
+### 目标用户
 
-```xml
-<groupId>com.ganttlens</groupId>
-<artifactId>ganttlens</artifactId>
-```
+- 技术负责人 / 研发组长
+- 项目经理 / 交付经理
+- 喜欢文档即代码（Docs-as-Code）工作流的工程团队
 
-### 1.5 Java 包名
+### 差异化价值
 
-```
-com.ganttlens.core      # 核心解析 + 分析
-com.ganttlens.cli       # CLI 入口
-com.ganttlens.gui       # JavaFX GUI (Phase 3)
-```
-
-### 1.6 CLI 命令名
-
-```
-ganttlens <command> [options]
-```
-
-### 1.7 候选名称对比
-
-| 名称 | 风险 | 评价 |
-|------|------|------|
-| **GanttLens** | ✅ 无风险 | 推荐，含义精准，无商标问题 |
-| GanttInsight | ✅ 无风险 | 备选，含义类似 |
-| PumlGantt | ⚠️ 含 "Puml" | 有商标风险，避免 |
-| PlantUML Gantt Analyzer | 🔴 含 "PlantUML" | 商标侵权风险，避免 |
+| 对比对象 | GanttLens 的优势 |
+|----------|-----------------|
+| 单纯 PlantUML | 不只画图，还回答人力和风险问题；支持统计图表和 Excel 导出 |
+| Jira / MS Project | 文本源文件可 Git 版本化；更轻量，适合工程文档体系 |
+| Mermaid Gantt | PlantUML 的 `{人员:百分比}` 语法更适合人天计算和资源分析 |
 
 ---
 
-## 2. 项目定位
+## 2. 技术栈
 
-**GanttLens** 是 PlantUML 甘特图的分析增强工具，解析 `.puml` 文件中的排期信息，提供人力统计、负载分析、风险检测等功能。
-
-核心理念：**用 PlantUML 写排期，用 GanttLens 看人力。**
-
-### 2.2 目标用户
-
-- 技术负责人
-- 项目负责人
-- 研发组长
-- 交付经理
-- 喜欢文档即代码工作流的工程团队
-
-### 2.3 差异化价值
-
-相比单纯 PlantUML：
-
-- 不只画图，还回答人力和风险问题
-- 支持人员视图和统计图表
-- 支持导出报表
-
-相比传统项目管理软件（Jira、飞书项目、MS Project）：
-
-- 文本源文件可版本化，适合 Git Review
-- 更轻量，适合工程文档体系
-
-相比 Mermaid Gantt：
-
-- PlantUML Gantt 的资源语法更适合人力统计
-- 可以利用 `{人员:百分比}` 这类表达做人天计算
+| 层次 | 技术 | 版本 | 说明 |
+|------|------|------|------|
+| 语言 | Java | 17+ | LTS，使用 records、text blocks、switch expressions |
+| 语法解析 | ANTLR4 | 4.13.1 | PlantUML Gantt DSL 解析核心 |
+| CLI 框架 | picocli | 4.7.5 | 注解式子命令 |
+| GUI 框架 | JavaFX | 21+ | 混合架构：Scene Graph + Canvas |
+| Excel 导出 | Apache POI | 5.2.5 | xlsx 多 sheet 工作簿 |
+| 日志 | Log4j2 | 2.21.1 | 日志实现 |
+| 构建工具 | Maven | 3.9+ | 多模块管理，maven-shade-plugin fat jar |
+| 单元测试 | JUnit 5 + AssertJ | 5.10.2 / 3.25.3 | 14 个测试类，覆盖解析、分析、导出、GUI |
 
 ---
 
-## 3. 演进路线
-
-```
-Phase 1 (MVP)          Phase 2 (CLI 完善)        Phase 3 (GUI)
-─────────────         ──────────────────        ─────────────
-CLI 工具               CLI 功能完善               JavaFX 跨平台 GUI
-· 解析核心语法          · 更多 PlantUML 语法       · 可视化甘特图
-· 人天统计             · 关键路径分析             · 交互式人员视图
-· 超载检测             · 报表导出 (CSV/MD/HTML)   · 实时负载热力图
-· 基本文本输出         · 节假日配置               · 风险面板
-                                            · 报表导出
-```
-
-### 3.2 产品形态
-
-| 形态 | 阶段 | 说明 |
-|------|------|------|
-| CLI 工具 | Phase 1-2 | 适合 CI、文档自动化、周报自动生成 |
-| GUI 桌面应用 | Phase 3 | JavaFX 跨平台，交互式甘特图和热力图 |
-| 本地 Web 工具 | 未来 | 前端 Vue/React + ECharts，拖拽 .puml 文件 |
-| VS Code 插件 | 未来 | 编辑 .puml 时右侧展示统计，保存时检查风险 |
-
----
-
-## 4. 技术栈
-
-| 层次 | 技术 | 版本要求 | 说明 |
-|------|------|---------|------|
-| 语言 | Java | 17+ | LTS 版本，支持 records、text blocks |
-| 语法解析 | ANTLR4 | 4.13+ | DSL 解析核心 |
-| CLI 框架 | picocli | 4.7+ | 注解式 CLI，支持子命令 |
-| GUI 框架 | JavaFX | 21+ | Phase 3 使用 |
-| 构建工具 | Maven | 3.9+ | 多模块管理 |
-| 打包 | GraalVM Native Image | 可选 | 提升启动速度 |
-| 测试 | JUnit 5 | 5.10+ | 单元测试 |
-| 测试 | AssertJ | 3.25+ | 断言增强 |
-
----
-
-## 5. 模块结构
+## 3. 模块结构
 
 ```
 GanttLens/
-├── pom.xml                              # 父 POM
+├── pom.xml                    # 父 POM（版本管理 + 插件配置）
 │
-├── core/                                # 核心模块 - 解析 + 分析
+├── core/                      # 核心模块：解析 + 分析 + 导出
 │   ├── pom.xml
 │   └── src/main/
 │       ├── antlr4/
-│       │   └── PlantUMLGantt.g4        # ANTLR4 语法定义
-│       ├── java/com/ganttlens/
-│       │   ├── model/                   # 数据模型
-│       │   │   ├── Task.java
-│       │   │   ├── Assignment.java
-│       │   │   ├── PersonDailyLoad.java
-│       │   │   ├── GanttSchedule.java
-│       │   │   └── ProjectStats.java
-│       │   ├── parser/                  # 解析层
-│       │   │   ├── GanttFileParser.java
-│       │   │   └── GanttParseListener.java
-│       │   ├── analyzer/                # 分析层
-│       │   │   ├── WorkloadAnalyzer.java
-│       │   │   ├── OverloadChecker.java
-│       │   │   ├── RiskDetector.java
-│       │   │   └── CriticalPathAnalyzer.java
-│       │   ├── export/                  # 导出层
-│       │   │   ├── CsvExporter.java
-│       │   │   ├── MarkdownExporter.java
-│       │   │   └── HtmlExporter.java
-│       │   └── config/                  # 配置
-│       │       ├── WorkCalendar.java
-│       │       └── AnalysisConfig.java
-│       └── resources/
-│           └── PlantUMLGanttVisitor.java  # ANTLR4 生成代码
+│       │   └── PlantUMLGantt.g4          # ANTLR4 语法定义
+│       └── java/com/ganttlens/
+│           ├── parser/                     # 解析层
+│           │   ├── GanttFileParser.java    # 入口：.puml → GanttSchedule
+│           │   └── GanttParseListener.java # ANTLR Visitor → 领域模型
+│           ├── analyzer/                   # 分析层
+│           │   ├── AnalysisEngine.java     # 编排器：调度所有分析器
+│           │   ├── WorkloadAnalyzer.java   # 人天 + 每日负载计算
+│           │   ├── OverloadChecker.java    # 超载检测（>100%）
+│           │   ├── CriticalPathAnalyzer.java # 关键路径（拓扑排序 + 最长路径）
+│           │   ├── ResourceBalancer.java   # 资源平衡建议
+│           │   └── GanttLayoutEngine.java  # 甘特图布局计算（纯函数）
+│           ├── export/                     # 导出层
+│           │   └── ExcelGanttExporter.java # Excel 多 sheet 导出
+│           └── model/                      # 数据模型（全部 record）
+│               ├── Task.java               # 任务（含 color、progressPercent）
+│               ├── Assignment.java         # 人员分配（person + ratio）
+│               ├── TaskStatus.java         # 枚举：PENDING/IN_PROGRESS/COMPLETED/BLOCKED
+│               ├── GanttSchedule.java      # 解析结果（config + tasks）
+│               ├── ScheduleConfig.java     # 日历配置（标题、起始日、节假日、休假）
+│               ├── ProjectStats.java       # 分析结果聚合
+│               ├── PersonDailyLoad.java    # 每人每日负载
+│               ├── OverloadRecord.java     # 超载记录
+│               ├── CriticalPathResult.java # 关键路径结果（任务链 + 浮动时间）
+│               ├── BalanceSuggestion.java  # 资源平衡建议
+│               ├── TaskLayout.java         # 布局坐标/尺寸（GUI 用）
+│               ├── LayoutConfig.java       # 视图配置（缩放、行高等）
+│               ├── TaskSelectionModel.java # 选中状态管理（GUI 用）
+│               ├── Command.java            # Undo/Redo 命令接口
+│               ├── CommandStack.java       # 操作栈（Undo/Redo）
+│               └── EditTaskCommand.java    # 编辑任务命令实现
 │
-├── cli/                                 # CLI 模块
+├── cli/                       # CLI 模块
 │   ├── pom.xml
 │   └── src/main/java/com/ganttlens/cli/
-│       ├── CliApp.java                  # 主入口
-│       ├── AnalyzeCommand.java          # analyze 子命令
-│       ├── CheckCommand.java            # check 子命令
-│       └── ExportCommand.java           # export 子命令
+│       ├── CliApp.java          # picocli 主入口
+│       ├── AnalyzeCommand.java  # analyze 子命令
+│       └── ExportCommand.java   # export 子命令（Excel 导出）
 │
-├── gui/                                 # GUI 模块 (Phase 3)
+├── gui/                       # GUI 模块（JavaFX）
 │   ├── pom.xml
 │   └── src/main/
 │       ├── java/com/ganttlens/gui/
-│       │   ├── GuiApp.java
-│       │   ├── controller/
-│       │   │   ├── GanttViewController.java
-│       │   │   ├── WorkloadViewController.java
-│       │   │   └── StatsViewController.java
-│       │   ├── view/
-│       │   │   ├── GanttView.java
-│       │   │   ├── WorkloadHeatmap.java
-│       │   │   └── StatsPanel.java
-│       │   └── model/
-│       │       └── UiTask.java
+│       │   ├── GuiApp.java                  # JavaFX Application 入口
+│       │   ├── MainController.java          # 主控制器（文件加载 + 解析触发）
+│       │   ├── GanttCanvasView.java         # Canvas 渲染层（哑终端）
+│       │   ├── GanttInteractionHandler.java # 鼠标事件 → 命中检测 → 业务操作
+│       │   └── GanttColorMapper.java        # 任务状态 → 颜色映射
 │       └── resources/
-│           ├── fxml/
-│           │   ├── gantt-view.fxml
-│           │   ├── workload-view.fxml
-│           │   └── stats-panel.fxml
-│           └── css/
-│               └── styles.css
+│           ├── fxml/main.fxml               # 主界面 FXML 布局
+│           └── css/style.css                # 样式表
 │
-└── dist/                                # 打包分发
-    ├── build-native.sh                  # GraalVM 打包脚本
-    └── jpackage-config/                 # jpackage 配置
+└── docs/                      # 文档
+    ├── architecture.md        # 本文档
+    ├── gui-prd.md             # GUI 产品需求文档（含技术选型）
+    ├── syntax-reference.md    # PlantUML Gantt 语法参考
+    └── archive/               # 历史文档
+        └── development-plan.md # 开发计划（已全部完成）
+```
+
+### 模块依赖
+
+```
+core  ← 无外部业务依赖（仅 ANTLR4 runtime + POI + Log4j2）
+  ↑
+cli   ← core + picocli
+  ↑
+gui   ← core + JavaFX（javafx-controls / javafx-fxml）
 ```
 
 ---
 
-## 6. ANTLR4 语法设计 (PlantUMLGantt.g4)
-
-### 6.1 设计原则
-
-- **只支持明确子集**，不支持的语法给出 warning 而非静默忽略
-- 语法设计尽量贴近 PlantUML 原始写法，减少用户学习成本
-- 对自由度高的部分（如任务名称）做合理约束
-
-### 6.2 语法草案
-
-```antlr
-grammar PlantUMLGantt;
-
-// ========== 入口 ==========
-ganttFile
-    : STARTGANTT directive* task* ENDGANTT
-    ;
-
-// ========== 指令 ==========
-directive
-    : weekendsDirective
-    | holidayDirective
-    | personOffDirective
-    | printscaleDirective
-    | titleDirective
-    ;
-
-weekendsDirective : 'saturday are closed' | 'sunday are closed' ;
-holidayDirective  : 'YYYY-MM-DD' 'is closed' ;  // 简化
-personOffDirective: '{' personName '}' 'is off on' DATE ;
-printscaleDirective: 'printscale' ('weekly' | 'daily' | 'monthly') ;
-titleDirective    : 'title' TEXT ;
-
-// ========== 任务 ==========
-task
-    : taskGroup?
-      '[' taskName ']'
-      ('on' resourceList)?
-      ('requires' duration | 'starts at' startDate)
-      ('and ends at' endDate)?
-      (''s end' | ' starts at [' TEXT ']'s end')?
-    ;
-
-taskGroup : '--' TEXT '--' ;
-
-resourceList
-    : resource (',' resource)*
-    ;
-
-resource
-    : '{' personName (' ':' ratio ')'}'
-    ;
-
-personName : WORD+ ;
-ratio      : INTEGER '%' ;
-duration   : INTEGER 'days' | 'hours' ;
-startDate  : DATE | taskRef ('start' | 'end') ;
-taskRef    : '[' TEXT ']' ;
-endDate    : DATE ;
-
-// ========== 词法 ==========
-STARTGANTT : '@startgantt' ;
-ENDGANTT   : '@endgantt' ;
-DATE       : DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT ;
-INTEGER    : [0-9]+ ;
-WORD       : ~[{}\[\]\s]+ ;
-TEXT       : ~[]+? ;
-WS         : [ \t\r\n]+ -> skip ;
-```
-
-> **注意**：以上为草案，实际实现时需要根据 PlantUML 真实语法行为做调整和测试。
-
----
-
-## 7. 核心数据模型
-
-```java
-// 任务
-public record Task(
-    String id,                    // 自动生成
-    String name,                  // 任务名称
-    String group,                 // 所属阶段（可选）
-    LocalDate startDate,          // 计算后的开始日期
-    LocalDate endDate,            // 计算后的结束日期
-    int durationDays,             // 持续天数（工作日）
-    List<Assignment> assignments, // 人员分配
-    List<String> dependencyIds,   // 依赖任务 ID
-    TaskStatus status             // 状态
-) {}
-
-// 人员分配
-public record Assignment(
-    String person,                // 人员名称
-    double ratio                  // 投入比例 0.0-1.0
-) {}
-
-// 每日负载
-public record PersonDailyLoad(
-    String person,
-    LocalDate date,
-    double totalLoad,             // 当日总投入比例
-    List<TaskLoad> tasks          // 参与的任务及各自比例
-) {}
-
-public record TaskLoad(
-    String taskId,
-    String taskName,
-    double ratio
-) {}
-
-// 项目统计
-public record ProjectStats(
-    int totalManDays,
-    Map<String, Integer> personManDays,       // 每人总人天
-    Map<String, List<PersonDailyLoad>> personDailyLoads, // 每人每日负载
-    List<OverloadRecord> overloads,           // 超载记录
-    List<RiskItem> risks                      // 风险项
-) {}
-
-// 超载记录
-public record OverloadRecord(
-    String person,
-    LocalDate date,
-    double totalLoad,
-    List<TaskLoad> tasks
-) {}
-
-// 风险项
-public record RiskItem(
-    RiskType type,          // UNASSIGNED, NO_DATE, OVERLOAD, CIRCULAR_DEP, WEEKEND_TASK
-    String description,
-    String taskId           // 关联任务（可选）
-) {}
-```
-
----
-
-## 8. 分析引擎设计
-
-### 8.1 解析流程
+## 4. 核心数据流
 
 ```
 .puml 文件
-    │
-    ▼
-ANTLR4 Lexer/Parser  →  Parse Tree
-    │
-    ▼
-GanttParseListener   →  领域模型 (GanttSchedule)
-    │
-    ▼
-Analyzer Chain       →  ProjectStats
-    │
-    ▼
-Exporter             →  CSV / Markdown / HTML / Console
+    ↓  [GanttFileParser + ANTLR4]
+GanttSchedule（ScheduleConfig + List<Task>）
+    ↓  [AnalysisEngine]
+    │    ├─ WorkloadAnalyzer   → personManDays + dailyLoads
+    │    ├─ OverloadChecker    → overloads
+    │    ├─ CriticalPathAnalyzer → criticalPath
+    │    └─ ResourceBalancer   → balanceSuggestions
+    ↓
+ProjectStats（聚合结果）
+    ↓
+  ├─ [CLI] AnalyzeCommand  → 控制台文本输出
+  ├─ [CLI] ExportCommand   → Excel 文件（ExcelGanttExporter）
+  └─ [GUI] GanttLayoutEngine → List<TaskLayout> → GanttCanvasView → Canvas 渲染
 ```
 
-### 8.2 日期推导规则
+### 日期推导规则
 
-```
-1. 有明确开始日期 → 从该日期起算
-2. 有前置任务依赖 → 从前置任务结束日期的下一个工作日开始
-3. 两者都没有 → 使用项目默认开始日期（可配置）
-4. 持续时间 = 工作日数（跳过周末、节假日、个人休假）
+1. 有明确开始日期（`starts DATE`）→ 从该日期起算
+2. 有前置任务依赖（`starts at [X]'s end`、`then`、`->`）→ 从前置任务结束的下一个工作日开始
+3. 均无 → 使用 `project starts DATE` 配置的项目默认开始日期
+4. 持续时间按工作日计算（跳过周末关闭日、节假日、个人休假）
+
+---
+
+## 5. 核心数据模型
+
+```java
+// 任务（record，不可变）
+public record Task(
+    String id,                    // 自动生成
+    String name,                  // 任务名称
+    String group,                 // 所属阶段（可选，来自 -- 分组 --）
+    LocalDate startDate,          // 计算后的开始日期
+    LocalDate endDate,            // 计算后的结束日期
+    int durationDays,             // 持续工作日数
+    List<Assignment> assignments, // 人员分配列表
+    List<String> dependencyIds,   // 前置依赖任务 ID
+    TaskStatus status,            // PENDING / IN_PROGRESS / COMPLETED / BLOCKED
+    String color,                 // 颜色标记（来自 is colored in X）
+    int progressPercent           // 完成百分比（0-100）
+) {}
+
+// 人员分配
+public record Assignment(String person, double ratio) {}  // ratio: 0.0-1.0
+
+// 解析结果
+public record GanttSchedule(ScheduleConfig config, List<Task> tasks) {}
+
+// 日历配置
+public record ScheduleConfig(
+    String title,
+    LocalDate projectStartDate,
+    boolean saturdayClosed,
+    boolean sundayClosed,
+    Set<LocalDate> holidays,
+    Set<PersonOffEntry> personOffDays
+) {}
+
+// 分析结果聚合
+public record ProjectStats(
+    double totalManDays,
+    Map<String, Double> personManDays,
+    List<PersonDailyLoad> dailyLoads,
+    List<OverloadRecord> overloads,
+    List<Task> tasks,
+    CriticalPathResult criticalPath,
+    List<BalanceSuggestion> balanceSuggestions
+) {}
 ```
 
-### 8.3 分析器链
+---
+
+## 6. 分析引擎
+
+`AnalysisEngine` 是编排器，按顺序调用四个分析器：
 
 ```java
 public class AnalysisEngine {
     private final WorkloadAnalyzer workloadAnalyzer;
     private final OverloadChecker overloadChecker;
-    private final RiskDetector riskDetector;
     private final CriticalPathAnalyzer criticalPathAnalyzer;
+    private final ResourceBalancer resourceBalancer;
 
-    public ProjectStats analyze(GanttSchedule schedule) {
-        var loads = workloadAnalyzer.analyze(schedule);
-        var overloads = overloadChecker.check(loads);
-        var risks = riskDetector.detect(schedule);
-        return new ProjectStats(...);
-    }
+    public ProjectStats analyze(GanttSchedule schedule) { ... }
 }
 ```
 
+| 分析器 | 职责 | 算法 |
+|--------|------|------|
+| WorkloadAnalyzer | 计算每人总人天和每日负载 | 遍历任务 × 工作日 × 分配比例 |
+| OverloadChecker | 检测某人某日负载 > 100% | 聚合每日负载，超阈值记录 |
+| CriticalPathAnalyzer | 找出项目最长任务链 | 拓扑排序 + 最早/最晚时间 + 浮动计算 |
+| ResourceBalancer | 为过载提供调优建议 | 结合关键路径浮动，建议推迟或减配 |
+
 ---
 
-## 9. CLI 命令设计
+## 7. GUI 架构
+
+GUI 采用**混合架构**（Scene Graph + Canvas），详见 [gui-prd.md](gui-prd.md)。
+
+### 分层设计（Humble Object 模式）
+
+| 组件 | 职责 | 可测试性 |
+|------|------|---------|
+| `GanttLayoutEngine`（core） | 任务列表 + LayoutConfig → 每个任务的屏幕坐标/尺寸 | ✅ 纯函数，可直接 JUnit 测试 |
+| `GanttCanvasView` | 遍历 TaskLayout，调用 GraphicsContext 绘制 | ⚠️ 需截图对比辅助验证 |
+| `GanttInteractionHandler` | 鼠标事件 → 命中检测 → 触发业务操作 | ✅ 可注入 mock 依赖测试 |
+| `TaskSelectionModel`（core） | 管理选中状态，与属性面板绑定 | ✅ 纯状态机，可直接测试 |
+| `CommandStack`（core） | Undo/Redo 操作栈（Command 模式） | ✅ 纯逻辑，可直接测试 |
+
+### 编辑模型
+
+- 所有界面修改先作用于内存中的 `GanttSchedule` 副本
+- 支持 Undo/Redo（`CommandStack` + `EditTaskCommand`）
+- 仅在用户显式保存时才序列化回 PlantUML 源码（整体重新序列化）
+
+---
+
+## 8. CLI 命令
 
 ```
 ganttlens <command> [options]
 
 Commands:
-  analyze   解析 .puml 文件并输出统计信息
-  check     检测排期风险和超载
-  export    导出统计报表
+  analyze   解析 .puml 文件，输出人天统计、关键路径、过载警告和资源平衡建议
+  export    导出 Excel 报表（甘特图 + 热力图 + 统计 + 任务明细）
 
 Options:
-  -f, --file <path>        输入 .puml 文件路径
-  --person <name>          只统计指定人员
-  --format <type>          输出格式: text(默认) / csv / markdown
-  --out <path>             输出文件路径（export 命令）
-  --start <date>           项目默认开始日期
-  --verbose                显示详细信息
-  --version                显示版本号
-  -h, --help               显示帮助
-```
-
-### 示例输出
-
-```bash
-$ ganttlens analyze -f plan.puml
-
-📊 项目概览
-  项目名称: Q3 迭代排期
-  时间跨度: 2026-07-01 ~ 2026-07-25 (18 个工作日)
-  总任务数: 8
-  总人天:   32
-
-👤 人员投入
-  张三: 10.5 天
-  李四: 12.0 天
-  王五:  9.5 天
-
-⚠️  超载警告
-  2026-07-08 张三 150% (需求分析 50% + 接口开发 100%)
-  2026-07-15 李四 120% (联调测试 100% + 文档编写 20%)
-
-📋 任务列表
-  [1] 需求分析    张三(50%)   07-01~07-04  4天
-  [2] 接口开发    李四(100%)  07-07~07-14  6天
-  [3] 联调测试    张三(50%) 王五(100%) 07-15~07-17  3天
-  ...
+  -f, --file <path>    输入 .puml 文件路径（必选）
+  -o, --output <path>  输出文件路径（export 命令）
+  --person <name>      只统计指定人员
+  --verbose            显示详细信息
+  -h, --help           显示帮助
 ```
 
 ---
 
-## 10. Maven 模块依赖
+## 9. 关键设计决策
 
-```
-core (无外部依赖，只依赖 ANTLR4 runtime)
-  ↑
-cli (依赖 core + picocli)
-  ↑
-gui (依赖 core + JavaFX) [Phase 3]
-```
-
-父 POM 关键依赖管理：
-
-```xml
-<properties>
-    <java.version>17</java.version>
-    <antlr4.version>4.13.1</antlr4.version>
-    <picocli.version>4.7.5</picocli.version>
-    <junit.version>5.10.2</junit.version>
-</properties>
-```
-
----
-
-## 11. 关键挑战
-
-| 挑战 | 说明 |
+| 决策 | 原因 |
 |------|------|
-| PlantUML Gantt 语法非标准 | 完整兼容成本高，需控制解析范围 |
-| 自然语言式 DSL | 文本自由度高，统计结果可能不稳定 |
-| 日期推导复杂 | 工作日、节假日、休假影响统计准确性 |
-| 任务依赖链 | 可能存在循环依赖，需要拓扑排序 |
-
-应对方式：
-
-- 第一版只支持明确子集，对不支持语法给出 warning 而非静默忽略
-- 提供推荐写法规范
-- 后续逐步兼容更多 PlantUML 语法
+| 只支持 PlantUML Gantt 语法子集 | 完整兼容成本高；不支持的语法给 warning 而非静默忽略 |
+| Task 为不可变 record | 解析结果是快照；Undo/Redo 通过 Command 模式管理副本 |
+| 布局逻辑在 core 而非 gui | GanttLayoutEngine 可在无 JavaFX 环境下单元测试 |
+| 保存时整体重新序列化 | 避免增量 patch 的复杂性；保证源码与内存模型一致 |
+| Excel 为唯一导出格式 | POI 可实现多 sheet 富格式报表；CSV/MD 暂未实现 |
 
 ---
 
-## 12. MVP 交付物
+## 10. 已知局限
 
-| 交付物 | 说明 |
-|--------|------|
-| `ganttlens analyze` | 解析 .puml，输出人天统计和任务列表 |
-| `ganttlens check` | 检测超载、未分配任务、无日期任务 |
-| `ganttlens export` | 导出 CSV 格式的人力投入明细 |
-| 单元测试 | 覆盖核心解析和分析逻辑 |
-| 示例 .puml | 用于演示和测试的样本排期文件 |
+| 局限 | 说明 |
+|------|------|
+| PlantUML 语法非标准 | 部分高级语法（如自定义日历、嵌套分组）暂不支持 |
+| 无风险检测模块 | 早期设计中规划的 RiskDetector 未实现；超载检测部分覆盖此功能 |
+| 无 CSV/Markdown/HTML 导出 | 目前仅支持 Excel 和控制台文本输出 |
+| GUI 无拖拽交互 | 任务日期调整通过属性面板输入，不支持拖拽任务条 |
+| 不支持多项目并行分析 | 每次只能分析一个 .puml 文件 |

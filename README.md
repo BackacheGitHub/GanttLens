@@ -62,21 +62,26 @@ java -jar cli/target/ganttlens-cli.jar export -f plan.puml -o output.xlsx
 ./mvnw exec:java -pl gui
 ```
 
+启动后可通过文件选择器打开 `.puml` 文件，在左侧编辑器中编辑源码，点击"解析"按钮后右侧甘特图实时更新。
+支持任务选中、属性编辑、Undo/Redo 和 Excel 导出。详见 [GUI 产品需求文档](docs/gui-prd.md)。
+
 ## 项目结构
 
 ```
 GanttLens/
 ├── core/           # 核心模块：解析、分析、导出
-├── cli/            # 命令行界面
-├── gui/            # JavaFX 图形界面
+├── cli/            # 命令行界面（analyze + export）
+├── gui/            # JavaFX 图形界面（甘特图 + 属性编辑）
 └── docs/           # 文档
+    └── archive/    # 历史文档（已完成的发展计划等）
 ```
 
 ## 文档
 
-- [架构设计](docs/architecture.md)
-- [开发计划](docs/development-plan.md)
-- [语法参考](docs/syntax-reference.md)
+- [架构设计](docs/architecture.md) — 模块结构、数据流、技术栈、设计决策
+- [GUI 产品需求文档](docs/gui-prd.md) — 用户故事、UI 布局、交互流程、技术选型
+- [语法参考](docs/syntax-reference.md) — PlantUML Gantt 支持的语法清单
+- [开发计划（归档）](docs/archive/development-plan.md) — 历史迭代记录（已全部完成）
 
 ## 版本历史
 

@@ -228,7 +228,53 @@ Canvas 像素输出
 
 ## Further Notes
 
-- 当前 Task model 缺少 `color` 字段，需在 core 模块中扩展以支持 `is colored in Green` 语法在 GUI 中的视觉映射
-- TaskStatus 目前只有 PENDING/IN_PROGRESS/COMPLETED 三种状态，可考虑增加 BLOCKED 状态以支持阻塞可视化
+- Task model 已包含 `color` 字段，支持 `is colored in Green` 语法，需在 GUI 中映射为视觉样式（GanttColorMapper）
+- TaskStatus 包含 PENDING/IN_PROGRESS/COMPLETED/BLOCKED 四种状态，BLOCKED 状态可用于支持阻塞可视化
 - 属性面板的依赖选择下拉框需要能显示所有可依赖的任务（排除自身和会产生循环依赖的任务）
 - 甘特图的缩放级别需要支持"日/周/月"三种时间粒度，不同粒度下时间轴的刻度和任务条的宽度不同
+
+---
+
+## 附录：Canvas vs Scene Graph 技术选型对比
+
+> 本节为 GUI 绘图技术选型的详细决策记录。
+
+### 最终决策：混合架构（Scene Graph + Canvas）
+
+| 层 | 技术 | 理由 |
+|---|---|---|
+| 应用框架（菜单、侧栏、对话框、属性面板） | **Scene Graph** | 布局、交互、可测试性全面占优 |
+| 甘特图绘图区 | **Canvas** | 200+ 任务的渲染性能更优，像素控制更精确 |
+| 布局计算逻辑 | **纯 Java 类**（`GanttLayoutEngine`） | 可独立单元测试，Humble Object 模式 |
+| 自动化测试 | **逻辑测试 + 基准截图对比** | 逻辑测试为主力，截图对比为辅助信号 |
+
+### 决策依据
+
+1. **规模需求**：目标支持 200+ 任务。200 个任务条 + 依赖箭头 + 时间轴在 Scene Graph 下会产生 2000-4000 个节点，接近性能边界；Canvas 在此规模下更稳定。
+2. **交互需求**：交互以按钮、下拉框、对话框为主，不强求拖拽。甘特图更多是"展示 + 选择"，是 Canvas 的甜区。
+3. **视觉风格**：参考 OmniPlan，功能性视觉元素优先，扁平色块 + 进度填充，Canvas 和 Scene Graph 均可实现。
+4. **可测试性**：核心可测试性来自布局逻辑层（纯函数），截图对比作为辅助信号。同机基准对比 + 差异人工审核，阈值 > 1% 时标记失败。
+
+### 业界参考
+
+- VS Code：Canvas 渲染编辑器，测试 TextModel 而非像素
+- JetBrains IDE：自绘编辑器，测试 PSI 模型和编辑器行为
+- Martin Fowler "Humble Object" 模式：将复杂对象拆分为可测逻辑 + 不可测展示层
+
+### Canvas vs Scene Graph 详细对比
+
+| 特性 | Canvas | Scene Graph |
+|------|--------|-------------|
+| 模式 | 立即模式 (Immediate) | 保留模式 (Retained) |
+| 精确像素控制 | ✅ 强 | ❌ 弱 |
+| 交互（点击、悬停） | ❌ 需自己计算 | ✅ 天然支持 |
+| 动画 | ❌ 需手动刷新 | ✅ 内置 Timeline |
+| 布局管理 | ❌ 手动定位 | ✅ VBox/HBox/BorderPane |
+| 性能（1000+ 元素） | ✅ 好 | ⚠️ 可能卡顿 |
+
+| 测试类型 | Canvas | Scene Graph |
+|----------|--------|-------------|
+| 布局/业务逻辑测试 | ✅ 一样（纯函数） | ✅ 一样（纯函数） |
+| UI 交互测试 | ❌ 困难 | ✅ 容易 |
+| 视觉回归测试 | ⚠️ 截图对比（辅助） | ⚠️ 截图对比（辅助） |
+| 整体可测试性 | ⭐⭐⭐⭐（配合分层架构） | ⭐⭐⭐⭐ |
