@@ -488,6 +488,115 @@ class Phase1ComprehensiveTest {
         assertThat(release.durationDays()).isEqualTo(0);
     }
 
+    // ========== Migrated from GanttFileParserTest ==========
+
+    @Test
+    @DisplayName("on keyword - parses resource assignment with ratio")
+    void onKeyword_parsesResourceAssignment() {
+        String puml = """
+            @startgantt
+            [Design] on {Alice:50%} requires 4 days
+            @endgantt
+            """;
+        GanttSchedule schedule = parser.parse(puml);
+
+        Task task = schedule.tasks().get(0);
+        assertThat(task.assignments()).hasSize(1);
+        assertThat(task.assignments().get(0).person()).isEqualTo("Alice");
+        assertThat(task.assignments().get(0).ratio()).isCloseTo(0.5, org.assertj.core.data.Offset.offset(0.01));
+    }
+
+    @Test
+    @DisplayName("requires keyword - parses duration")
+    void requiresKeyword_parsesDuration() {
+        String puml = """
+            @startgantt
+            [Task1] requires 4 days
+            [Task2] requires 6 days
+            [Task3] requires 3 days
+            @endgantt
+            """;
+        GanttSchedule schedule = parser.parse(puml);
+
+        assertThat(schedule.tasks().get(0).durationDays()).isEqualTo(4);
+        assertThat(schedule.tasks().get(1).durationDays()).isEqualTo(6);
+        assertThat(schedule.tasks().get(2).durationDays()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("Multiple assignments on single task")
+    void multipleAssignments_singleTask() {
+        String puml = """
+            @startgantt
+            [Testing] on {Alice:50%} {Bob:100%} requires 3 days
+            @endgantt
+            """;
+        GanttSchedule schedule = parser.parse(puml);
+
+        Task task = schedule.tasks().get(0);
+        assertThat(task.assignments()).hasSize(2);
+        assertThat(task.assignments().get(0).person()).isEqualTo("Alice");
+        assertThat(task.assignments().get(1).person()).isEqualTo("Bob");
+    }
+
+    @Test
+    @DisplayName("Chinese task names - parsed correctly")
+    void chineseTaskNames_parsedCorrectly() {
+        String puml = """
+            @startgantt
+            [需求分析] requires 4 days
+            [接口开发] starts at [需求分析]'s end requires 6 days
+            [联调测试] requires 3 days
+            @endgantt
+            """;
+        GanttSchedule schedule = parser.parse(puml);
+
+        assertThat(schedule.tasks()).hasSize(3);
+        assertThat(schedule.tasks().get(0).name()).isEqualTo("需求分析");
+        assertThat(schedule.tasks().get(1).name()).isEqualTo("接口开发");
+        assertThat(schedule.tasks().get(2).name()).isEqualTo("联调测试");
+    }
+
+    @Test
+    @DisplayName("Date range close - adds multiple holidays with open override")
+    void dateRangeClose_addsMultipleHolidays() {
+        String puml = """
+            @startgantt
+            2026-07-04 to 2026-07-06 is closed
+            2026-07-05 is open
+            [Task1] requires 5 days
+            @endgantt
+            """;
+        GanttSchedule schedule = parser.parse(puml);
+
+        // 2026-07-04 to 2026-07-06 = 3 days closed
+        // 2026-07-05 is open = 1 day removed
+        // Total: 2 holidays
+        assertThat(schedule.config().holidays()).hasSize(2);
+        assertThat(schedule.config().holidays())
+            .contains(
+                LocalDate.of(2026, 7, 4),
+                LocalDate.of(2026, 7, 6)
+            );
+        assertThat(schedule.config().holidays())
+            .doesNotContain(LocalDate.of(2026, 7, 5));
+    }
+
+    @Test
+    @DisplayName("starts absolute date - sets start date")
+    void startsAbsoluteDate_setsStartDate() {
+        String puml = """
+            @startgantt
+            [Task1] starts 2026-07-15 requires 5 days
+            @endgantt
+            """;
+        GanttSchedule schedule = parser.parse(puml);
+
+        assertThat(schedule.tasks()).hasSize(1);
+        Task task = schedule.tasks().get(0);
+        assertThat(task.startDate()).isEqualTo(LocalDate.of(2026, 7, 15));
+    }
+
     @Test
     @DisplayName("File-based test - project-starts.puml")
     void fileBasedTest_projectStarts() throws IOException {

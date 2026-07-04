@@ -1,9 +1,0 @@
-@startgantt
-saturday are closed
-sunday are closed
-
-[需求分析] on {张三:50%} requires 4 days
-[接口开发] on {李四} starts at [需求分析]'s end requires 6 days
-[联调测试] on {张三:50%} {王五:100%} requires 3 days
-{张三} is off on 2026-07-10
-@endgantt
