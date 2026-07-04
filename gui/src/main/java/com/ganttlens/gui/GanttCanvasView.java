@@ -299,10 +299,12 @@ public class GanttCanvasView extends Canvas {
                     String name = task.name();
                     if (name.length() > 15) name = name.substring(0, 14) + "...";
                     // Use white text on colored progress fill, dark text on gray background
-                    double textEndX = tl.x() + 4 + name.length() * 6.5;
+                    // Arrow now comes from bottom of previous task, so less left padding needed
+                    double textStartX = tl.x() + 6; // Reduced from 12 to 6 for better space utilization
+                    double textEndX = textStartX + name.length() * 6.5;
                     boolean textOnFill = tl.progressWidth() > 0 && textEndX <= tl.x() + tl.progressWidth();
                     gc.setFill(textOnFill ? Color.WHITE : Color.web("#424242"));
-                    gc.fillText(name, tl.x() + 4, barY + barHeight / 2 + 4);
+                    gc.fillText(name, textStartX, barY + barHeight / 2 + 4);
                 }
             }
         }

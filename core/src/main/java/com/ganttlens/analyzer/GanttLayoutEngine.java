@@ -179,36 +179,43 @@ public class GanttLayoutEngine {
     }
 
     /**
-     * Computes an orthogonal (L/Z-shaped) arrow path between two task layouts.
-     * Returns an array of {@code [x, y]} coordinate pairs describing the polyline.
-     *
-     * <ul>
-     *   <li>Same row: 2 points (straight horizontal line)</li>
-     *   <li>Cross row: 4 points (Z-shaped bend avoiding intermediate rows)</li>
-     * </ul>
+     * Computes an orthogonal (L-shaped) arrow path between two task layouts.
+     * Arrow originates from the bottom of the source task (offset from right edge)
+     * and connects to the left edge of the target task.
+     * 
+     * Path structure:
+     * - Start: bottom of source task, offset from right edge
+     * - Vertical down to target's Y level
+     * - Horizontal to target's left edge
+     * 
+     * This design avoids overlapping with task text while saving horizontal space.
      *
      * @param from source task layout
      * @param to   target task layout
-     * @return array of [x,y] coordinate pairs
+     * @return array of [x,y] coordinate pairs describing the polyline
      */
     public double[][] computeArrowPath(TaskLayout from, TaskLayout to) {
-        double startX = from.x() + from.width();
-        double startY = from.y() + from.height() / 2.0;
+        // Start point: bottom of source task, offset from right edge
+        // Offset ensures arrow doesn't originate from the exact corner (visually cleaner)
+        double bottomOffset = 8; // distance from right edge where arrow starts
+        double startX = from.x() + from.width() - bottomOffset;
+        double startY = from.y() + from.height(); // bottom edge of source task
+        
+        // End point: left edge of target task, centered vertically
         double endX = to.x();
         double endY = to.y() + to.height() / 2.0;
 
-        // Same row: straight horizontal line
+        // Same row: use original horizontal approach (arrow from right to left)
         if (Math.abs(from.y() - to.y()) < 0.001) {
-            return new double[][]{ {startX, startY}, {endX, endY} };
+            double sameRowStartX = from.x() + from.width();
+            return new double[][]{ {sameRowStartX, startY - from.height() / 2.0}, {endX, endY} };
         }
 
-        // Cross row: Z-shaped orthogonal path
-        double midX = startX + 8; // 8px horizontal offset from source right edge
+        // Cross row: L-shaped path (vertical then horizontal)
         return new double[][]{
-            {startX, startY},
-            {midX,   startY},
-            {midX,   endY},
-            {endX,   endY}
+            {startX, startY},      // start at bottom of source (offset from right)
+            {startX, endY},        // vertical down to target's Y level
+            {endX,   endY}         // horizontal to target's left edge
         };
     }
 }

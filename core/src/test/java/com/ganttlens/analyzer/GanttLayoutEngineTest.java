@@ -299,13 +299,15 @@ class GanttLayoutEngineTest {
 
         double[][] path = engine.computeArrowPath(from, to);
 
-        assertThat(path).hasNumberOfRows(2);
-        // Start at right edge of from
-        assertThat(path[0][0]).isEqualTo(180.0);
-        assertThat(path[0][1]).isEqualTo(45.0); // y mid
+        assertThat(path).hasNumberOfRows(2); // Same row: straight horizontal line
+        
+        // Start at right edge of from (not bottom for same row)
+        assertThat(path[0][0]).isEqualTo(180.0); // from.x() + from.width()
+        assertThat(path[0][1]).isEqualTo(45.0);  // from.y() + from.height()/2
+        
         // End at left edge of to
         assertThat(path[1][0]).isEqualTo(200.0);
-        assertThat(path[1][1]).isEqualTo(45.0);
+        assertThat(path[1][1]).isEqualTo(45.0);  // to.y() + to.height()/2
     }
 
     @Test
@@ -315,19 +317,22 @@ class GanttLayoutEngineTest {
 
         double[][] path = engine.computeArrowPath(from, to);
 
-        assertThat(path).hasNumberOfRows(4);
-        // Start at right edge of from
-        assertThat(path[0][0]).isEqualTo(180.0);
-        assertThat(path[0][1]).isEqualTo(45.0);
-        // Horizontal offset 8px
-        assertThat(path[1][0]).isEqualTo(188.0);
-        assertThat(path[1][1]).isEqualTo(45.0);
-        // Vertical to target Y
-        assertThat(path[2][0]).isEqualTo(188.0);
-        assertThat(path[2][1]).isEqualTo(105.0);
-        // Horizontal to target left edge
-        assertThat(path[3][0]).isEqualTo(50.0);
-        assertThat(path[3][1]).isEqualTo(105.0);
+        assertThat(path).hasNumberOfRows(3); // L-shaped: bottom -> vertical -> horizontal
+        
+        // Start at bottom of source task, offset from right edge (8px)
+        double expectedStartX = 100 + 80 - 8; // x + width - bottomOffset
+        double expectedStartY = 30 + 30;      // y + height (bottom edge)
+        assertThat(path[0][0]).isEqualTo(expectedStartX);
+        assertThat(path[0][1]).isEqualTo(expectedStartY);
+        
+        // Vertical down to target's Y level
+        double expectedEndY = 90 + 15; // to.y() + to.height()/2
+        assertThat(path[1][0]).isEqualTo(expectedStartX);
+        assertThat(path[1][1]).isEqualTo(expectedEndY);
+        
+        // Horizontal to target's left edge
+        assertThat(path[2][0]).isEqualTo(50.0);
+        assertThat(path[2][1]).isEqualTo(expectedEndY);
     }
 
     // ========== Task 6: Milestone ==========
