@@ -121,13 +121,12 @@ public class GanttCanvasView extends Canvas {
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, w, h);
 
-        // Layer 1: Scrollable content (task bars, dependency arrows, today line)
+        // Layer 1: Scrollable content (task bars, dependency arrows)
         gc.save();
         gc.translate(-scrollX, -scrollY);
         drawRowBackgrounds(gc);
         drawTaskBars(gc);
         drawDependencyArrows(gc);
-        drawTodayLine(gc, h);
         gc.restore();
 
         // Layer 2: Fixed time axis at top (scrolls X only, not Y)
@@ -141,6 +140,9 @@ public class GanttCanvasView extends Canvas {
         gc.translate(0, -scrollY);
         drawTaskLabels(gc);
         gc.restore();
+
+        // Layer 4: Today line (topmost, spans full height)
+        drawTodayLine(gc, h);
     }
 
     // ========== Time Axis ==========
@@ -424,7 +426,7 @@ public class GanttCanvasView extends Canvas {
         double contentHeight = Math.max(canvasHeight, layouts.size() * config.rowHeight() + config.startY());
 
         gc.setStroke(TODAY_COLOR);
-        gc.setLineWidth(1.5);
+        gc.setLineWidth(1.0);
         gc.setLineDashOffset(0);
         gc.strokeLine(x, 0, x, contentHeight);
     }

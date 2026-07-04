@@ -56,9 +56,13 @@ java -jar cli/target/ganttlens-cli.jar export -f plan.puml -o output.xlsx
 ### GUI 应用
 
 ```bash
-# 先安装 core 到本地仓库（修改 core 后必须执行）
+# 如果修改了 core 模块，先安装 core 到本地仓库
 ./mvnw install -pl core -DskipTests
-# 再启动 GUI
+
+# 如果修改了 gui 模块，只需重新编译 gui
+./mvnw compile -pl gui
+
+# 启动 GUI（pom.xml 已配置 mainClass）
 ./mvnw exec:java -pl gui
 ```
 
