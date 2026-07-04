@@ -151,21 +151,21 @@ public class GanttCanvasView extends Canvas {
         LocalDate current = config.startDate();
         LocalDate end = config.endDate();
         double labelWidth = config.labelColumnWidth();
-        double contentHeight = Math.max(canvasHeight, layouts.size() * config.rowHeight() + config.startY());
+        double headerHeight = TIME_AXIS_HEIGHT; // Only draw in the header area
 
         while (!current.isAfter(end)) {
             double x = labelWidth + (ChronoUnit.DAYS.between(config.startDate(), current)) * config.pixelsPerDay();
 
-            // Weekend background
+            // Weekend background (only in header area)
             if (isWeekend(current)) {
                 gc.setFill(GanttColorMapper.weekendBackground());
-                gc.fillRect(x, 0, config.pixelsPerDay(), contentHeight);
+                gc.fillRect(x, 0, config.pixelsPerDay(), headerHeight);
             }
 
-            // Grid line
+            // Grid line (only in header area)
             gc.setStroke(GanttColorMapper.gridLineColor());
             gc.setLineWidth(0.5);
-            gc.strokeLine(x, 0, x, contentHeight);
+            gc.strokeLine(x, 0, x, headerHeight);
 
             // Date label (every day, or every 5 days for dense layouts)
             if (config.pixelsPerDay() >= 15 || current.getDayOfMonth() == 1 || current.getDayOfWeek() == DayOfWeek.MONDAY) {
@@ -181,28 +181,34 @@ public class GanttCanvasView extends Canvas {
         // Header separator line
         gc.setStroke(Color.web("#E0E0E0"));
         gc.setLineWidth(1);
-        gc.strokeLine(labelWidth, 16, labelWidth + (ChronoUnit.DAYS.between(config.startDate(), end) + 1) * config.pixelsPerDay(), 16);
+        gc.strokeLine(labelWidth, headerHeight - 4, labelWidth + (ChronoUnit.DAYS.between(config.startDate(), end) + 1) * config.pixelsPerDay(), headerHeight - 4);
     }
 
     // ========== Row Backgrounds ==========
 
     private void drawRowBackgrounds(GraphicsContext gc) {
-        if (tasks.isEmpty()) return;
+        if (layouts.isEmpty()) return;
 
         double fullWidth = config.labelColumnWidth()
             + (ChronoUnit.DAYS.between(config.startDate(), config.endDate()) + 1) * config.pixelsPerDay();
 
-        for (int i = 0; i < tasks.size(); i++) {
-            double rowY = config.startY() + i * config.rowHeight();
+        int rowIndex = 0; // Include both group headers and task rows for alternating colors
+        for (int i = 0; i < layouts.size(); i++) {
+            TaskLayout tl = layouts.get(i);
 
-            // Alternating background
-            gc.setFill(i % 2 == 0 ? GanttColorMapper.rowBackgroundEven() : GanttColorMapper.rowBackgroundOdd());
-            gc.fillRect(0, rowY, fullWidth, config.rowHeight());
+            double rowY = tl.y();
+            double rowHeight = tl.height();
+
+            // Alternating background (includes group headers)
+            gc.setFill(rowIndex % 2 == 0 ? GanttColorMapper.rowBackgroundEven() : GanttColorMapper.rowBackgroundOdd());
+            gc.fillRect(0, rowY, fullWidth, rowHeight);
 
             // Row separator line
             gc.setStroke(GanttColorMapper.rowSeparatorColor());
             gc.setLineWidth(0.5);
-            gc.strokeLine(0, rowY + config.rowHeight(), fullWidth, rowY + config.rowHeight());
+            gc.strokeLine(0, rowY + rowHeight, fullWidth, rowY + rowHeight);
+
+            rowIndex++;
         }
     }
 
@@ -217,10 +223,9 @@ public class GanttCanvasView extends Canvas {
 
             // Skip group headers in task bar rendering (drawn separately)
             if (tl.isGroupHeader()) {
-                // Group header: dark background + white bold text
-                gc.setFill(Color.web("#424242"));
-                gc.fillRect(tl.x(), tl.y(), tl.width(), tl.height());
-                gc.setFill(Color.WHITE);
+                // Group header: use row background color + dark bold text
+                // Background already drawn by drawRowBackgrounds, just add label
+                gc.setFill(Color.web("#424242")); // Dark gray text
                 gc.setFont(Font.font("System", javafx.scene.text.FontWeight.BOLD, 12));
                 gc.fillText(tl.groupLabel() != null ? tl.groupLabel() : "", 8, tl.y() + tl.height() / 2 + 4);
                 continue;
@@ -323,7 +328,7 @@ public class GanttCanvasView extends Canvas {
 
             if (tl.isGroupHeader()) {
                 // Group header label
-                gc.setFill(Color.WHITE);
+                gc.setFill(Color.web("#424242")); // Dark gray text
                 gc.setFont(Font.font("System", javafx.scene.text.FontWeight.BOLD, 12));
                 gc.fillText(tl.groupLabel() != null ? tl.groupLabel() : "", 8, tl.y() + tl.height() / 2 + 4);
                 continue;

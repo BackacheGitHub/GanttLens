@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.ListView;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.paint.Color;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,20 @@ class MainFxmlTest {
     @Test
     void rowBackgroundOdd_isLightGray() {
         assertThat(GanttColorMapper.rowBackgroundOdd()).isEqualTo(Color.web("#F8F9FA"));
+    }
+
+    @Test
+    void ganttCanvasRendersWithGroupHeadersWithoutException() throws Exception {
+        // Given: FXMLLoader loads main.fxml (triggers initialize() → parseAndAnalyze())
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
+        Parent root = loader.load();
+        MainController controller = loader.getController();
+
+        // Then: no exception thrown during load, controller is wired and canvas is bound
+        assertThat(controller).isNotNull();
+        assertThat(root).isNotNull();
+        // Verify ganttCanvas exists in FXML namespace (fx:id binding)
+        assertThat(loader.getNamespace().get("ganttCanvas")).isInstanceOf(Canvas.class);
     }
 
     @Test

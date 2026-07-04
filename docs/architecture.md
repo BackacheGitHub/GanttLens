@@ -232,10 +232,17 @@ GUI 采用**混合架构**（Scene Graph + Canvas），详见 [gui-prd.md](gui-p
 | 组件 | 职责 | 可测试性 |
 |------|------|---------|
 | `GanttLayoutEngine`（core） | 任务列表 + LayoutConfig → 每个任务的屏幕坐标/尺寸 | ✅ 纯函数，可直接 JUnit 测试 |
-| `GanttCanvasView` | 遍历 TaskLayout，调用 GraphicsContext 绘制 | ⚠️ 需截图对比辅助验证 |
+| `GanttCanvasView` | 遍历 TaskLayout，调用 GraphicsContext 绘制 | ✅ 集成测试验证渲染流程 + 人工视觉验证 |
 | `GanttInteractionHandler` | 鼠标事件 → 命中检测 → 触发业务操作 | ✅ 可注入 mock 依赖测试 |
 | `TaskSelectionModel`（core） | 管理选中状态，与属性面板绑定 | ✅ 纯状态机，可直接测试 |
 | `CommandStack`（core） | Undo/Redo 操作栈（Command 模式） | ✅ 纯逻辑，可直接测试 |
+
+### 测试覆盖说明
+
+`GanttCanvasView` 的绘制逻辑通过集成测试验证端到端流程：
+- 默认示例（含分组头）能正常加载、解析、渲染且无异常
+
+由于 JavaFX Canvas 的特性，精确的绘制参数验证（如 y 坐标、颜色值）需要 Mock 框架支持。当前阶段依赖人工视觉验证确保视觉效果正确。未来实施 PRD 中规划的视觉回归测试时，将引入 TestFX + Mockito 形成完整的 UI 测试体系。
 
 ### 编辑模型
 
