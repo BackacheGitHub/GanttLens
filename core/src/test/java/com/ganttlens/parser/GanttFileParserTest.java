@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,7 +17,7 @@ class GanttFileParserTest {
 
     @Test
     void parseSimpleSchedule() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/simple.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/simple.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         assertThat(schedule.tasks()).hasSize(3);
@@ -27,7 +28,7 @@ class GanttFileParserTest {
 
     @Test
     void parseTaskNames() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/simple.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/simple.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         assertThat(schedule.tasks().get(0).name()).isEqualTo("需求分析");
@@ -37,7 +38,7 @@ class GanttFileParserTest {
 
     @Test
     void parseAssignments() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/simple.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/simple.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         Task firstTask = schedule.tasks().get(0);
@@ -48,7 +49,7 @@ class GanttFileParserTest {
 
     @Test
     void parseDuration() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/simple.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/simple.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         assertThat(schedule.tasks().get(0).durationDays()).isEqualTo(4);
@@ -58,10 +59,42 @@ class GanttFileParserTest {
 
     @Test
     void parseDependencies() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/simple.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/simple.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         Task secondTask = schedule.tasks().get(1);
         assertThat(secondTask.dependencyIds()).containsExactly("需求分析");
+    }
+
+    @Test
+    void dateRangeClose_addsMultipleHolidays() throws IOException {
+        String content = Files.readString(Path.of("src/test/resources/syntax/date-range-close.puml"));
+        GanttSchedule schedule = parser.parse(content);
+
+        // 2026-07-04 to 2026-07-06 = 3 days closed
+        // 2026-07-05 is open = 1 day removed
+        // Total: 2 holidays
+        assertThat(schedule.config().holidays()).hasSize(2);
+        assertThat(schedule.config().holidays())
+            .contains(
+                LocalDate.of(2026, 7, 4),
+                LocalDate.of(2026, 7, 6)
+            );
+        assertThat(schedule.config().holidays())
+            .doesNotContain(LocalDate.of(2026, 7, 5));
+    }
+
+    @Test
+    void startsAbsoluteDate_setsStartDate() {
+        String puml = """
+            @startgantt
+            [Task1] starts 2026-07-15 requires 5 days
+            @endgantt
+            """;
+        GanttSchedule schedule = parser.parse(puml);
+
+        assertThat(schedule.tasks()).hasSize(1);
+        Task task = schedule.tasks().get(0);
+        assertThat(task.startDate()).isEqualTo(LocalDate.of(2026, 7, 15));
     }
 }

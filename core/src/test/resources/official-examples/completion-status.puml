@@ -1,0 +1,6 @@
+@startgantt
+[foo] requires 21 days
+[foo] is 40% complete
+[bar] requires 30 days
+[bar] is 10% complete
+@endgantt

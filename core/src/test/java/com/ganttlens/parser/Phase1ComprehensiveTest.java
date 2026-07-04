@@ -457,7 +457,7 @@ class Phase1ComprehensiveTest {
     @Test
     @DisplayName("File-based test - then-syntax.puml")
     void fileBasedTest_thenSyntax() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/then-syntax.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/then-syntax.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         assertThat(schedule.tasks()).hasSize(3);
@@ -468,7 +468,7 @@ class Phase1ComprehensiveTest {
     @Test
     @DisplayName("File-based test - alias-syntax.puml")
     void fileBasedTest_aliasSyntax() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/alias-syntax.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/alias-syntax.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         assertThat(schedule.tasks()).hasSize(3);
@@ -479,7 +479,7 @@ class Phase1ComprehensiveTest {
     @Test
     @DisplayName("File-based test - milestone-syntax.puml")
     void fileBasedTest_milestoneSyntax() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/milestone-syntax.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/milestone-syntax.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         assertThat(schedule.tasks()).hasSize(4);
@@ -491,7 +491,7 @@ class Phase1ComprehensiveTest {
     @Test
     @DisplayName("File-based test - project-starts.puml")
     void fileBasedTest_projectStarts() throws IOException {
-        String content = Files.readString(Path.of("src/test/resources/project-starts.puml"));
+        String content = Files.readString(Path.of("src/test/resources/syntax/project-starts.puml"));
         GanttSchedule schedule = parser.parse(content);
 
         assertThat(schedule.config().projectStartDate())

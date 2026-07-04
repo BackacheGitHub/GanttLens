@@ -1,0 +1,5 @@
+@startgantt
+[Prototype design] as [D] requires 15 days
+[Test prototype] as [T] requires 10 days
+[T] starts at [D]'s end
+@endgantt

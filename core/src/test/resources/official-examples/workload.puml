@@ -1,0 +1,9 @@
+@startgantt
+[Prototype design] requires 15 days
+[Test prototype] requires 10 days
+-- All example --
+[Task1] requires 1 days
+[T2] requires 5 days
+[T3] requires 1 weeks
+[T5] requires 2 weeks
+@endgantt
