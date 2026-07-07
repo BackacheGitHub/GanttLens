@@ -20,8 +20,14 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
     private boolean sundayClosed = false;
     private String title = "";
     private String printscale = "";
+    private String printscaleZoom = "";
+    private String language = "";
     private LocalDate projectStartDate = null;
     private final AtomicInteger taskCounter = new AtomicInteger(0);
+
+    // Preprocessor-extracted metadata
+    private final String closedDayColor;
+    private final Map<LocalDate, String> dateColors;
 
     // Alias mapping: alias -> task name
     private final Map<String, String> aliasMap = new LinkedHashMap<>();
@@ -32,8 +38,24 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
     // Current group name for task groups
     private String currentGroup = null;
 
+    /** Backward-compatible no-arg constructor. */
+    public GanttParseListener() {
+        this(null, Map.of());
+    }
+
+    /** Constructor with preprocessor metadata. */
+    public GanttParseListener(String closedDayColor, Map<LocalDate, String> dateColors) {
+        this.closedDayColor = closedDayColor;
+        this.dateColors = dateColors != null ? dateColors : Map.of();
+    }
+
     @Override
     public Void visitGanttFile(PlantUMLGanttParser.GanttFileContext ctx) {
+        // Extract title from @startgantt WORD+ if present
+        List<TerminalNode> titleWords = ctx.WORD();
+        if (!titleWords.isEmpty()) {
+            title = extractJoinedWords(titleWords);
+        }
         // Visit all children in source order to preserve task group grouping
         for (ParseTree child : ctx.children) {
             visit(child);
@@ -98,6 +120,15 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
         if (ctx.WEEKLY() != null) printscale = "weekly";
         else if (ctx.DAILY() != null) printscale = "daily";
         else if (ctx.MONTHLY() != null) printscale = "monthly";
+        if (ctx.ZOOM() != null) {
+            printscaleZoom = ctx.FLOAT() != null ? ctx.FLOAT().getText() : ctx.INTEGER().getText();
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitLanguageDirective(PlantUMLGanttParser.LanguageDirectiveContext ctx) {
+        language = extractJoinedWords(ctx.WORD());
         return null;
     }
 
@@ -163,8 +194,13 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                         dependencyIds.add(resolveAlias(refName));
                     }
                 } else if (startsAt.DATE_TOKEN() != null) {
-                    // starts DATE
-                    startDate = parseDate(startsAt.DATE_TOKEN().getText());
+                    if (startsAt.AND() != null) {
+                        // starts DATE and ends DATE
+                        startDate = parseDate(startsAt.DATE_TOKEN(0).getText());
+                    } else {
+                        // starts DATE
+                        startDate = parseDate(startsAt.DATE_TOKEN(0).getText());
+                    }
                 } else if (startsAt.ENDS() != null) {
                     // ends DATE - set end date directly (will be handled later)
                     // For now, we treat this as a dependency if it references a task
@@ -172,20 +208,29 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             }
         }
 
-        // Handle 'is completed' / 'is X% complete' status
+        // Handle 'is completed' / 'is X% complete' / 'is X% completed' status
         TaskStatus status = TaskStatus.PENDING;
         int progressPercent = 0;
-        if (!body.IS_COMPLETED().isEmpty()) {
-            status = TaskStatus.COMPLETED;
-            progressPercent = 100;
+        for (var pc : body.partialComplete()) {
+            if (pc.IS_COMPLETED() != null) {
+                status = TaskStatus.COMPLETED;
+                progressPercent = 100;
+            } else if (pc.WORD().size() >= 2) {
+                String firstWord = pc.WORD(0).getText();
+                String lastWord = pc.WORD(1).getText();
+                if ("is".equals(firstWord) && ("complete".equals(lastWord) || "completed".equals(lastWord))) {
+                    progressPercent = Integer.parseInt(pc.INTEGER().getText());
+                    status = TaskStatus.IN_PROGRESS;
+                }
+            }
         }
-        if (!body.partialComplete().isEmpty()) {
-            var pc = body.partialComplete().get(0);
-            String firstWord = pc.WORD(0).getText();
-            String lastWord = pc.WORD(1).getText();
-            if ("is".equals(firstWord) && "complete".equals(lastWord)) {
-                progressPercent = Integer.parseInt(pc.INTEGER().getText());
-                status = TaskStatus.IN_PROGRESS;
+
+        // Handle 'starts DATE and ends DATE'
+        LocalDate explicitEndDate = null;
+        if (timing != null && timing.startsAtOrDateClause() != null) {
+            PlantUMLGanttParser.StartsAtOrDateClauseContext startsAt = timing.startsAtOrDateClause();
+            if (startsAt.AND() != null && startsAt.DATE_TOKEN().size() == 2) {
+                explicitEndDate = parseDate(startsAt.DATE_TOKEN(1).getText());
             }
         }
 
@@ -211,7 +256,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             dependencyIds,
             status,
             color,
-            progressPercent
+            progressPercent,
+            explicitEndDate
         );
 
         tasks.add(task);
@@ -254,20 +300,29 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             }
         }
 
-        // Handle 'is completed' / 'is X% complete' status
+        // Handle 'is completed' / 'is X% complete' / 'is X% completed' status
         TaskStatus status = TaskStatus.PENDING;
         int progressPercent = 0;
-        if (!body.IS_COMPLETED().isEmpty()) {
-            status = TaskStatus.COMPLETED;
-            progressPercent = 100;
+        for (var pc : body.partialComplete()) {
+            if (pc.IS_COMPLETED() != null) {
+                status = TaskStatus.COMPLETED;
+                progressPercent = 100;
+            } else if (pc.WORD().size() >= 2) {
+                String firstWord = pc.WORD(0).getText();
+                String lastWord = pc.WORD(1).getText();
+                if ("is".equals(firstWord) && ("complete".equals(lastWord) || "completed".equals(lastWord))) {
+                    progressPercent = Integer.parseInt(pc.INTEGER().getText());
+                    status = TaskStatus.IN_PROGRESS;
+                }
+            }
         }
-        if (!body.partialComplete().isEmpty()) {
-            var pc = body.partialComplete().get(0);
-            String firstWord = pc.WORD(0).getText();
-            String lastWord = pc.WORD(1).getText();
-            if ("is".equals(firstWord) && "complete".equals(lastWord)) {
-                progressPercent = Integer.parseInt(pc.INTEGER().getText());
-                status = TaskStatus.IN_PROGRESS;
+
+        // Handle 'starts DATE and ends DATE'
+        LocalDate explicitEndDate = null;
+        if (timing != null && timing.startsAtOrDateClause() != null) {
+            PlantUMLGanttParser.StartsAtOrDateClauseContext startsAt = timing.startsAtOrDateClause();
+            if (startsAt.AND() != null && startsAt.DATE_TOKEN().size() == 2) {
+                explicitEndDate = parseDate(startsAt.DATE_TOKEN(1).getText());
             }
         }
 
@@ -293,7 +348,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             dependencyIds,
             status,
             color,
-            progressPercent
+            progressPercent,
+            explicitEndDate
         );
 
         tasks.add(task);
@@ -332,8 +388,20 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
 
     @Override
     public Void visitMilestone(PlantUMLGanttParser.MilestoneContext ctx) {
-        String name = extractTaskName(ctx.taskName());
+        // Handle both bracket names and plain names
+        String name;
+        if (ctx.taskName() != null) {
+            name = extractTaskName(ctx.taskName());
+        } else {
+            // bracketTaskName inside LBRACK RBRACK - extract from WORD tokens
+            name = extractTaskNameFromWords(ctx);
+        }
         String id = "task-" + taskCounter.incrementAndGet();
+
+        // Handle alias
+        if (ctx.alias != null) {
+            aliasMap.put(ctx.alias.getText(), name);
+        }
 
         LocalDate milestoneDate = null;
         List<String> dependencyIds = new ArrayList<>();
@@ -363,6 +431,20 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
         tasks.add(milestone);
         lastTaskName = name;
         return null;
+    }
+
+    /** Extract task name from WORD tokens inside a milestone context (for bracket names). */
+    private String extractTaskNameFromWords(PlantUMLGanttParser.MilestoneContext ctx) {
+        // The LBRACK taskName RBRACK part: taskName has WORD+ tokens
+        // Since milestone has: (LBRACK taskName RBRACK ... | taskName)
+        // and ctx.taskName() is null for the bracket case,
+        // we need to find the taskName child
+        for (int i = 0; i < ctx.getChildCount(); i++) {
+            if (ctx.getChild(i) instanceof PlantUMLGanttParser.TaskNameContext tnc) {
+                return extractTaskName(tnc);
+            }
+        }
+        return "";
     }
 
     // ========== Helper Methods ==========
@@ -435,7 +517,11 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             saturdayClosed,
             sundayClosed,
             holidays,
-            personOffDays
+            personOffDays,
+            language,
+            printscaleZoom,
+            closedDayColor,
+            dateColors
         );
 
         // Compute end dates and resolve dependencies
@@ -451,8 +537,14 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
         // First pass: resolve tasks with explicit start dates
         for (Task task : tasks) {
             if (task.startDate() != null) {
-                LocalDate endDate = computeEndDate(task.startDate(), task.durationDays(), config);
-                updateTask(task, task.startDate(), endDate);
+                if (task.explicitEndDate() != null && task.durationDays() == 0) {
+                    // starts DATE and ends DATE: compute working days between dates
+                    int workDays = countWorkingDays(task.startDate(), task.explicitEndDate(), config);
+                    updateTaskWithDuration(task, task.startDate(), task.explicitEndDate(), workDays);
+                } else {
+                    LocalDate endDate = computeEndDate(task.startDate(), task.durationDays(), config);
+                    updateTask(task, task.startDate(), endDate);
+                }
             }
         }
 
@@ -524,7 +616,28 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 task.dependencyIds(),
                 task.status(),
                 task.color(),
-                task.progressPercent()
+                task.progressPercent(),
+                task.explicitEndDate()
+            ));
+        }
+    }
+
+    private void updateTaskWithDuration(Task task, LocalDate startDate, LocalDate endDate, int workDays) {
+        int index = tasks.indexOf(task);
+        if (index >= 0) {
+            tasks.set(index, new Task(
+                task.id(),
+                task.name(),
+                task.group(),
+                startDate,
+                endDate,
+                workDays,
+                task.assignments(),
+                task.dependencyIds(),
+                task.status(),
+                task.color(),
+                task.progressPercent(),
+                task.explicitEndDate()
             ));
         }
     }
@@ -543,8 +656,20 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 newDeps,
                 task.status(),
                 task.color(),
-                task.progressPercent()
+                task.progressPercent(),
+                task.explicitEndDate()
             ));
         }
+    }
+
+    private int countWorkingDays(LocalDate start, LocalDate end, ScheduleConfig config) {
+        if (!end.isAfter(start)) return 0;
+        int count = 1; // include start day
+        LocalDate current = start;
+        while (current.isBefore(end)) {
+            current = nextWorkingDay(current, config);
+            if (!current.isAfter(end)) count++;
+        }
+        return count;
     }
 }

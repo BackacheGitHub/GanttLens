@@ -1,6 +1,7 @@
 package com.ganttlens.model;
 
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -12,8 +13,20 @@ public record ScheduleConfig(
     boolean saturdayClosed,
     boolean sundayClosed,
     Set<LocalDate> holidays,
-    Set<PersonOffEntry> personOffDays
+    Set<PersonOffEntry> personOffDays,
+    String language,
+    String printscaleZoom,
+    String closedDayColor,
+    Map<LocalDate, String> dateColors
 ) {
+    /** Backward-compatible constructor without new fields. */
+    public ScheduleConfig(String title, LocalDate projectStartDate,
+                          boolean saturdayClosed, boolean sundayClosed,
+                          Set<LocalDate> holidays, Set<PersonOffEntry> personOffDays) {
+        this(title, projectStartDate, saturdayClosed, sundayClosed,
+             holidays, personOffDays, "", "", null, Map.of());
+    }
+
     public record PersonOffEntry(String person, LocalDate date) {}
 
     /**

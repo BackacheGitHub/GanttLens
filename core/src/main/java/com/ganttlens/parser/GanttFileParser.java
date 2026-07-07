@@ -26,13 +26,18 @@ public class GanttFileParser {
      * Parses PlantUML Gantt content string and returns a GanttSchedule.
      */
     public GanttSchedule parse(String content) {
-        PlantUMLGanttLexer lexer = new PlantUMLGanttLexer(CharStreams.fromString(content));
+        // Preprocess: strip !define, <style>, today directives, date-color lines
+        GanttPreprocessor.PreprocessResult prep = GanttPreprocessor.preprocess(content);
+
+        PlantUMLGanttLexer lexer = new PlantUMLGanttLexer(CharStreams.fromString(prep.content()));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         PlantUMLGanttParser parser = new PlantUMLGanttParser(tokens);
 
         ParseTree tree = parser.ganttFile();
 
-        GanttParseListener listener = new GanttParseListener();
+        GanttParseListener listener = new GanttParseListener(
+            prep.closedDayColor(), prep.dateColors()
+        );
         listener.visit(tree);
 
         return listener.buildSchedule();

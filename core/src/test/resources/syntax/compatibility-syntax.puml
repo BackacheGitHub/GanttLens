@@ -1,0 +1,39 @@
+@startgantt Extended Syntax Demo
+!define MY_TASK_COLOR Turquoise
+language zh
+printscale daily zoom 1.5
+
+<style>
+ganttDiagram {
+  closed {
+    BackgroundColor WhiteSmoke
+  }
+}
+</style>
+
+project starts 2026-06-29
+saturday are closed
+sunday are closed
+today is 2026-07-06
+today is colored in Pink
+2026-08-25 is colored in MistyRose
+
+-- Phase 1 --
+[Alpha Task] on {Alice} starts 2026-06-29 and ends 2026-07-03
+[Alpha Task] is colored in LightSkyBlue
+[Alpha Task] is 100% completed
+
+[Beta Task] on {Bob} requires 3 days
+[Beta Task] starts at [Alpha Task]'s end
+[Beta Task] is colored in MY_TASK_COLOR
+[Beta Task] is 0% completed
+
+[Gamma Milestone] as [GAMMA] happens at [Beta Task]'s end
+
+-- Phase 2 --
+[Delta Task] on {Charlie} starts 2026-07-10 and ends 2026-07-15
+[Delta Task] is colored in LightGreen
+
+[Final Milestone] as [FINAL] happens at [Delta Task]'s end
+
+@endgantt

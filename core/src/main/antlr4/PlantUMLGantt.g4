@@ -6,7 +6,7 @@ grammar PlantUMLGantt;
 
 // ========== Entry Point ==========
 ganttFile
-    : STARTGANTT (directive | taskGroupDirective | task | arrowDependency | thenTask | milestone)* ENDGANTT
+    : STARTGANTT (WORD+)? (directive | taskGroupDirective | task | arrowDependency | thenTask | milestone)* ENDGANTT
     ;
 
 // ========== Directives ==========
@@ -19,6 +19,11 @@ directive
     | projectStartDirective
     | dateRangeCloseDirective
     | dateOpenDirective
+    | languageDirective
+    ;
+
+languageDirective
+    : LANGUAGE WORD+
     ;
 
 weekendsCloseDirective
@@ -43,7 +48,7 @@ personOffDirective
     ;
 
 printscaleDirective
-    : PRINTSCALE (WEEKLY | DAILY | MONTHLY)
+    : PRINTSCALE (WEEKLY | DAILY | MONTHLY) (ZOOM (FLOAT | INTEGER))?
     ;
 
 titleDirective
@@ -56,7 +61,7 @@ projectStartDirective
 
 // ========== Tasks ==========
 taskGroupDirective
-    : DASH (WORD | INTEGER)+ DASH
+    : DASH (WORD | INTEGER | AND | LANGUAGE | ZOOM)+ DASH
     ;
 
 task
@@ -64,15 +69,16 @@ task
     ;
 
 taskGroup
-    : DASH (WORD | INTEGER)+ DASH
+    : DASH (WORD | INTEGER | AND | LANGUAGE | ZOOM)+ DASH
     ;
 
 taskBody
-    : LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? taskResource? taskTiming? (IS_COMPLETED | partialComplete | IS_COLORED WORD+)*
+    : LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? taskResource? taskTiming? (partialComplete | IS_COLORED WORD+)*
     ;
 
 partialComplete
     : WORD INTEGER PERCENT WORD
+    | IS_COMPLETED
     ;
 
 taskResource
@@ -99,6 +105,7 @@ requiresOrLastsClause
 
 startsAtOrDateClause
     : STARTS_AT startDate
+    | STARTS DATE_TOKEN AND ENDS DATE_TOKEN
     | STARTS DATE_TOKEN
     | ENDS DATE_TOKEN
     ;
@@ -129,7 +136,8 @@ thenTask
 
 // ========== Milestone ==========
 milestone
-    : taskGroup? taskName HAPPENS (AT taskRef S_END | ON DATE_TOKEN)
+    : taskGroup? (LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? | taskName)
+      HAPPENS (AT taskRef S_END | ON DATE_TOKEN)
     ;
 
 // ========== Shared ==========
@@ -182,10 +190,17 @@ THEN            : 'then' ;
 HAPPENS         : 'happens' ;
 AT              : 'at' ;
 TO              : 'to' ;
+LANGUAGE        : 'language' ;
+ZOOM            : 'zoom' ;
+AND             : 'and' ;
 ARROW           : '->' ;
 
 DATE_TOKEN
     : DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT
+    ;
+
+FLOAT
+    : DIGIT+ '.' DIGIT+
     ;
 
 INTEGER
