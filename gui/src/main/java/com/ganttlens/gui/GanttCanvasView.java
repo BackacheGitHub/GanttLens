@@ -82,6 +82,28 @@ public class GanttCanvasView extends Canvas {
     }
 
     /**
+     * Renders the Gantt chart directly onto an external GraphicsContext.
+     * This avoids the snapshot approach which can cause DPI scaling mismatches.
+     *
+     * @param gc     the target GraphicsContext to draw on
+     * @param width  the logical width of the target canvas
+     * @param height the logical height of the target canvas
+     * @param layouts task layout positions
+     * @param tasks   task data
+     * @param config  layout configuration
+     * @param scheduleConfig schedule configuration (nullable)
+     */
+    public void renderTo(GraphicsContext gc, double width, double height,
+                         List<TaskLayout> layouts, List<Task> tasks,
+                         LayoutConfig config, ScheduleConfig scheduleConfig) {
+        this.layouts = layouts;
+        this.tasks = tasks;
+        this.config = config;
+        this.scheduleConfig = scheduleConfig;
+        drawOn(gc, width, height);
+    }
+
+    /**
      * Updates scroll offsets and redraws.
      */
     public void setScroll(double scrollX, double scrollY) {
@@ -120,11 +142,14 @@ public class GanttCanvasView extends Canvas {
      *   Layer 3 — fixed label column (left, scrolls Y only)
      */
     public void draw() {
-        if (config == null) return;
+        drawOn(getGraphicsContext2D(), getWidth(), getHeight());
+    }
 
-        GraphicsContext gc = getGraphicsContext2D();
-        double w = getWidth();
-        double h = getHeight();
+    /**
+     * Core rendering logic that draws onto the given GraphicsContext.
+     */
+    private void drawOn(GraphicsContext gc, double w, double h) {
+        if (config == null) return;
 
         // Clear
         gc.clearRect(0, 0, w, h);

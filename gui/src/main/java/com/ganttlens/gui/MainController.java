@@ -220,7 +220,6 @@ public class MainController {
             mutableTasks.clear();
             mutableTasks.addAll(currentSchedule.tasks());
             computeLayout();
-            interactionHandler.setData(currentLayouts, mutableTasks);
             selectionModel.setTasks(mutableTasks);
             selectionModel.clearSelection();
             renderGantt();
@@ -271,6 +270,9 @@ public class MainController {
 
         currentLayouts = layoutEngine.computeLayout(tasks, criticalIds, config);
 
+        // Always sync interaction handler with latest layout data
+        interactionHandler.setData(currentLayouts, mutableTasks);
+
         // Resize canvas to fit content
         double[] size = layoutEngine.computeCanvasSize(tasks, config);
         double canvasWidth = Math.max(size[0], ganttScrollPane.getViewportBounds().getWidth());
@@ -311,14 +313,12 @@ public class MainController {
             GanttCanvasView.TIME_AXIS_HEIGHT, LayoutConfig.DEFAULT_LABEL_COLUMN_WIDTH
         );
 
-        GanttCanvasView canvasView = new GanttCanvasView(ganttCanvas.getWidth(), ganttCanvas.getHeight());
-        canvasView.setSelectedIds(selectionModel.getSelectedIds());
-        canvasView.render(currentLayouts, tasks, config, currentSchedule.config());
-
-        // Copy rendered content to the FXML canvas
-        ganttCanvas.getGraphicsContext2D().drawImage(
-            canvasView.snapshot(null, null),
-            0, 0
+        GanttCanvasView renderer = new GanttCanvasView();
+        renderer.setSelectedIds(selectionModel.getSelectedIds());
+        renderer.renderTo(
+            ganttCanvas.getGraphicsContext2D(),
+            ganttCanvas.getWidth(), ganttCanvas.getHeight(),
+            currentLayouts, tasks, config, currentSchedule.config()
         );
     }
 
@@ -475,7 +475,6 @@ public class MainController {
     private void undo() {
         if (commandStack.undo()) {
             hasUnsavedChanges = true;
-            interactionHandler.setData(currentLayouts, mutableTasks);
             selectionModel.setTasks(mutableTasks);
             Task selected = selectionModel.getSelectedTask();
             if (selected != null) {
@@ -491,7 +490,6 @@ public class MainController {
     private void redo() {
         if (commandStack.redo()) {
             hasUnsavedChanges = true;
-            interactionHandler.setData(currentLayouts, mutableTasks);
             selectionModel.setTasks(mutableTasks);
             Task selected = selectionModel.getSelectedTask();
             if (selected != null) {

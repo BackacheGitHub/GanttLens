@@ -106,12 +106,20 @@ public class GanttLayoutEngine {
      * @param layouts  pre-computed layout list
      * @return Optional containing the taskId if hit, empty otherwise
      */
+    /** Vertical padding (top and bottom) applied to task bars within a row during rendering. */
+    public static final double BAR_VERTICAL_PADDING = 4.0;
+
     public Optional<String> hitTest(double mouseX, double mouseY, List<TaskLayout> layouts) {
         // Iterate in reverse so topmost (last drawn) task is hit first
         for (int i = layouts.size() - 1; i >= 0; i--) {
             TaskLayout tl = layouts.get(i);
+            if (tl.isGroupHeader()) continue; // group headers are not clickable
+
+            // Use actual bar bounds (with vertical padding) instead of full row height
+            double barY = tl.y() + BAR_VERTICAL_PADDING;
+            double barHeight = tl.height() - BAR_VERTICAL_PADDING * 2;
             if (mouseX >= tl.x() && mouseX <= tl.x() + tl.width()
-                && mouseY >= tl.y() && mouseY <= tl.y() + tl.height()) {
+                && mouseY >= barY && mouseY <= barY + barHeight) {
                 return Optional.of(tl.taskId());
             }
         }

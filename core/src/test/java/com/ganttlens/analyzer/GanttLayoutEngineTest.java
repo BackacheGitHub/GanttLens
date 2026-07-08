@@ -262,6 +262,74 @@ class GanttLayoutEngineTest {
         assertThat(hit).isEmpty();
     }
 
+    @Test
+    void hitTest_clickInVerticalPadding_returnsEmpty() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = new LayoutConfig(start, end, 30.0, 30.0, 0, 0);
+
+        Task task = makeTask("t1", "Task A", start, end, 5);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+        TaskLayout tl = layouts.get(0);
+
+        // Click in the top 4px padding area (above the actual bar)
+        double clickX = tl.x() + tl.width() / 2;
+        double clickY = tl.y() + 2; // within row but above bar (bar starts at y+4)
+        Optional<String> hit = engine.hitTest(clickX, clickY, layouts);
+        assertThat(hit).isEmpty();
+    }
+
+    @Test
+    void hitTest_clickOnGroupHeader_returnsEmpty() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+        LayoutConfig config = defaultConfig(start, end);
+
+        Task task = new Task("t1", "Task A", "GroupX",
+            start, end, 5, List.of(), List.of(), TaskStatus.PENDING, null);
+        List<TaskLayout> layouts = engine.computeLayout(List.of(task), Set.of(), config);
+
+        // First layout should be the group header
+        assertThat(layouts.get(0).isGroupHeader()).isTrue();
+        TaskLayout groupHeader = layouts.get(0);
+
+        // Click on the group header area
+        Optional<String> hit = engine.hitTest(groupHeader.x() + 50, groupHeader.y() + 10, layouts);
+        // Group headers should not be clickable
+        assertThat(hit).isEmpty();
+    }
+
+    @Test
+    void hitTest_afterReLayout_usesNewPositions() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 5);
+
+        // Initial layout with 30px per day
+        LayoutConfig config1 = new LayoutConfig(start, end, 30.0, 30.0, 0, 0);
+        Task task = makeTask("t1", "Task A", start, end, 5);
+        List<TaskLayout> layouts1 = engine.computeLayout(List.of(task), Set.of(), config1);
+
+        // Re-layout with 60px per day (zoom in)
+        LayoutConfig config2 = new LayoutConfig(start, end, 60.0, 30.0, 0, 0);
+        List<TaskLayout> layouts2 = engine.computeLayout(List.of(task), Set.of(), config2);
+
+        TaskLayout tl2 = layouts2.get(0);
+        // Click at center of the NEW bar position
+        double clickX = tl2.x() + tl2.width() / 2;
+        double clickY = tl2.y() + tl2.height() / 2;
+
+        // Using NEW layouts should hit
+        assertThat(engine.hitTest(clickX, clickY, layouts2)).isPresent();
+
+        // Using OLD layouts at the same coordinate may miss (demonstrates stale data problem)
+        // The old bar is narrower, so clicking at the new center might be outside old bounds
+        TaskLayout tl1 = layouts1.get(0);
+        if (clickX > tl1.x() + tl1.width()) {
+            // This proves stale layouts give wrong results
+            assertThat(engine.hitTest(clickX, clickY, layouts1)).isEmpty();
+        }
+    }
+
     // ========== Task 2: Time Axis Fixed at Top ==========
 
     @Test
