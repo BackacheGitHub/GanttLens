@@ -28,6 +28,7 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
     // Preprocessor-extracted metadata
     private final String closedDayColor;
     private final Map<LocalDate, String> dateColors;
+    private final LocalDate todayDate;
 
     // Alias mapping: alias -> task name
     private final Map<String, String> aliasMap = new LinkedHashMap<>();
@@ -40,13 +41,19 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
 
     /** Backward-compatible no-arg constructor. */
     public GanttParseListener() {
-        this(null, Map.of());
+        this(null, Map.of(), null);
     }
 
     /** Constructor with preprocessor metadata. */
     public GanttParseListener(String closedDayColor, Map<LocalDate, String> dateColors) {
+        this(closedDayColor, dateColors, null);
+    }
+
+    /** Constructor with preprocessor metadata including todayDate. */
+    public GanttParseListener(String closedDayColor, Map<LocalDate, String> dateColors, LocalDate todayDate) {
         this.closedDayColor = closedDayColor;
         this.dateColors = dateColors != null ? dateColors : Map.of();
+        this.todayDate = todayDate;
     }
 
     @Override
@@ -194,9 +201,13 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                         dependencyIds.add(resolveAlias(refName));
                     }
                 } else if (startsAt.DATE_TOKEN() != null) {
-                    if (startsAt.AND() != null) {
+                    if (startsAt.AND() != null && startsAt.LASTS() == null) {
                         // starts DATE and ends DATE
                         startDate = parseDate(startsAt.DATE_TOKEN(0).getText());
+                    } else if (startsAt.AND() != null && startsAt.LASTS() != null) {
+                        // starts DATE and lasts DURATION
+                        startDate = parseDate(startsAt.DATE_TOKEN(0).getText());
+                        durationDays = parseDuration(startsAt.duration());
                     } else {
                         // starts DATE
                         startDate = parseDate(startsAt.DATE_TOKEN(0).getText());
@@ -229,20 +240,41 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
         LocalDate explicitEndDate = null;
         if (timing != null && timing.startsAtOrDateClause() != null) {
             PlantUMLGanttParser.StartsAtOrDateClauseContext startsAt = timing.startsAtOrDateClause();
-            if (startsAt.AND() != null && startsAt.DATE_TOKEN().size() == 2) {
+            if (startsAt.AND() != null && startsAt.LASTS() == null && startsAt.DATE_TOKEN().size() == 2) {
                 explicitEndDate = parseDate(startsAt.DATE_TOKEN(1).getText());
             }
         }
 
         // Handle 'is colored' color extraction
-        String color = null;
-        if (!body.IS_COLORED().isEmpty() && !body.WORD().isEmpty()) {
-            StringBuilder colorBuilder = new StringBuilder();
-            for (var word : body.WORD()) {
-                if (!colorBuilder.isEmpty()) colorBuilder.append(" ");
-                colorBuilder.append(word.getText());
+        String color = extractColor(body);
+
+        // Check if this is a property-only update for an existing task (color, progress, timing on separate lines)
+        // If a task with the same name already exists, merge properties instead of creating a duplicate
+        {
+            String resolvedName = resolveAlias(name);
+            for (int i = 0; i < tasks.size(); i++) {
+                Task existing = tasks.get(i);
+                if (existing.name().equals(resolvedName) || aliasMap.getOrDefault(name, "").equals(existing.name())) {
+                    String mergedColor = color != null ? color : existing.color();
+                    int mergedProgress = progressPercent > 0 ? progressPercent : existing.progressPercent();
+                    TaskStatus mergedStatus = status != TaskStatus.PENDING ? status : existing.status();
+                    LocalDate mergedStart = startDate != null ? startDate : existing.startDate();
+                    int mergedDuration = durationDays > 0 ? durationDays : existing.durationDays();
+                    List<String> mergedDeps = new ArrayList<>(existing.dependencyIds());
+                    for (String dep : dependencyIds) {
+                        if (!mergedDeps.contains(dep)) mergedDeps.add(dep);
+                    }
+                    LocalDate mergedEndDate = explicitEndDate != null ? explicitEndDate : existing.explicitEndDate();
+                    tasks.set(i, new Task(
+                        existing.id(), existing.name(), existing.group(),
+                        mergedStart, null, mergedDuration,
+                        existing.assignments(), mergedDeps, mergedStatus,
+                        mergedColor, mergedProgress, mergedEndDate
+                    ));
+                    lastTaskName = name;
+                    return null;
+                }
             }
-            color = colorBuilder.toString();
         }
 
         Task task = new Task(
@@ -296,6 +328,14 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
                 PlantUMLGanttParser.StartsAtOrDateClauseContext startsAt = timing.startsAtOrDateClause();
                 if (startsAt.startDate() != null && startsAt.startDate().DATE_TOKEN() != null) {
                     startDate = parseDate(startsAt.startDate().DATE_TOKEN().getText());
+                } else if (startsAt.DATE_TOKEN() != null) {
+                    if (startsAt.AND() != null && startsAt.LASTS() != null) {
+                        // starts DATE and lasts DURATION
+                        startDate = parseDate(startsAt.DATE_TOKEN(0).getText());
+                        durationDays = parseDuration(startsAt.duration());
+                    } else {
+                        startDate = parseDate(startsAt.DATE_TOKEN(0).getText());
+                    }
                 }
             }
         }
@@ -321,21 +361,13 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
         LocalDate explicitEndDate = null;
         if (timing != null && timing.startsAtOrDateClause() != null) {
             PlantUMLGanttParser.StartsAtOrDateClauseContext startsAt = timing.startsAtOrDateClause();
-            if (startsAt.AND() != null && startsAt.DATE_TOKEN().size() == 2) {
+            if (startsAt.AND() != null && startsAt.LASTS() == null && startsAt.DATE_TOKEN().size() == 2) {
                 explicitEndDate = parseDate(startsAt.DATE_TOKEN(1).getText());
             }
         }
 
         // Handle 'is colored' color extraction
-        String color = null;
-        if (!body.IS_COLORED().isEmpty() && !body.WORD().isEmpty()) {
-            StringBuilder colorBuilder = new StringBuilder();
-            for (var word : body.WORD()) {
-                if (!colorBuilder.isEmpty()) colorBuilder.append(" ");
-                colorBuilder.append(word.getText());
-            }
-            color = colorBuilder.toString();
-        }
+        String color = extractColor(body);
 
         Task task = new Task(
             id,
@@ -414,6 +446,28 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             milestoneDate = parseDate(ctx.DATE_TOKEN().getText());
         }
 
+        // Check if a milestone/task with this name already exists (multi-line happens at)
+        String resolvedName = resolveAlias(name);
+        for (int i = 0; i < tasks.size(); i++) {
+            Task existing = tasks.get(i);
+            if (existing.name().equals(resolvedName) || aliasMap.getOrDefault(name, "").equals(existing.name())) {
+                // Merge dependency
+                List<String> mergedDeps = new ArrayList<>(existing.dependencyIds());
+                for (String dep : dependencyIds) {
+                    if (!mergedDeps.contains(dep)) mergedDeps.add(dep);
+                }
+                LocalDate mergedDate = milestoneDate != null ? milestoneDate : existing.startDate();
+                tasks.set(i, new Task(
+                    existing.id(), existing.name(), existing.group(),
+                    mergedDate, mergedDate, 0,
+                    existing.assignments(), mergedDeps, existing.status(),
+                    existing.color(), existing.progressPercent(), existing.explicitEndDate()
+                ));
+                lastTaskName = name;
+                return null;
+            }
+        }
+
         // Milestone is a zero-duration task
         Task milestone = new Task(
             id,
@@ -448,6 +502,44 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
     }
 
     // ========== Helper Methods ==========
+
+    /**
+     * Extracts color from 'is colored in COLOR' clauses in a taskBody.
+     * Correctly skips the optional 'in' keyword between 'is colored' and the color name.
+     */
+    private String extractColor(PlantUMLGanttParser.TaskBodyContext body) {
+        if (body.IS_COLORED().isEmpty()) return null;
+
+        // Find WORD tokens that follow IS_COLORED tokens (not part of task name/alias)
+        ParseTree[] children = new ParseTree[body.getChildCount()];
+        for (int i = 0; i < body.getChildCount(); i++) {
+            children[i] = body.getChild(i);
+        }
+
+        // Locate the last IS_COLORED and collect WORDs after it
+        int lastIsColoredIdx = -1;
+        for (int i = 0; i < children.length; i++) {
+            if (children[i] instanceof TerminalNode tn && tn.getSymbol().getType() == PlantUMLGanttParser.IS_COLORED) {
+                lastIsColoredIdx = i;
+            }
+        }
+
+        if (lastIsColoredIdx < 0) return null;
+
+        List<String> colorWords = new ArrayList<>();
+        boolean skippedIn = false;
+        for (int i = lastIsColoredIdx + 1; i < children.length; i++) {
+            if (children[i] instanceof TerminalNode tn && tn.getSymbol().getType() == PlantUMLGanttParser.WORD) {
+                if (!skippedIn && "in".equals(tn.getText())) {
+                    skippedIn = true;
+                    continue;
+                }
+                colorWords.add(tn.getText());
+            }
+        }
+
+        return colorWords.isEmpty() ? null : String.join(" ", colorWords);
+    }
 
     private String resolveAlias(String name) {
         return aliasMap.getOrDefault(name, name);
@@ -521,7 +613,8 @@ public class GanttParseListener extends PlantUMLGanttBaseVisitor<Void> {
             language,
             printscaleZoom,
             closedDayColor,
-            dateColors
+            dateColors,
+            todayDate
         );
 
         // Compute end dates and resolve dependencies

@@ -12,6 +12,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -24,6 +25,7 @@ public class GanttCanvasView extends Canvas {
     private List<TaskLayout> layouts = List.of();
     private List<Task> tasks = List.of();
     private LayoutConfig config;
+    private ScheduleConfig scheduleConfig;
     private double scrollX = 0;
     private double scrollY = 0;
 
@@ -65,9 +67,17 @@ public class GanttCanvasView extends Canvas {
      * Renders the full Gantt chart.
      */
     public void render(List<TaskLayout> layouts, List<Task> tasks, LayoutConfig config) {
+        render(layouts, tasks, config, null);
+    }
+
+    /**
+     * Renders the full Gantt chart with schedule configuration for today line, date colors, etc.
+     */
+    public void render(List<TaskLayout> layouts, List<Task> tasks, LayoutConfig config, ScheduleConfig scheduleConfig) {
         this.layouts = layouts;
         this.tasks = tasks;
         this.config = config;
+        this.scheduleConfig = scheduleConfig;
         draw();
     }
 
@@ -155,12 +165,29 @@ public class GanttCanvasView extends Canvas {
         double labelWidth = config.labelColumnWidth();
         double headerHeight = TIME_AXIS_HEIGHT; // Only draw in the header area
 
+        // Resolve closedDayColor from scheduleConfig
+        String closedDayColor = scheduleConfig != null ? scheduleConfig.closedDayColor() : null;
+        Map<LocalDate, String> dateColors = scheduleConfig != null && scheduleConfig.dateColors() != null
+            ? scheduleConfig.dateColors() : Map.of();
+
         while (!current.isAfter(end)) {
             double x = labelWidth + (ChronoUnit.DAYS.between(config.startDate(), current)) * config.pixelsPerDay();
 
-            // Weekend background (only in header area)
-            if (isWeekend(current)) {
-                gc.setFill(GanttColorMapper.weekendBackground());
+            // Date-specific color background (takes precedence over weekend color)
+            if (dateColors.containsKey(current)) {
+                try {
+                    gc.setFill(Color.web(dateColors.get(current)));
+                    gc.fillRect(x, 0, config.pixelsPerDay(), headerHeight);
+                } catch (IllegalArgumentException ignored) {
+                    // Fall through to weekend/normal background
+                    if (isWeekend(current)) {
+                        gc.setFill(GanttColorMapper.weekendBackground(closedDayColor));
+                        gc.fillRect(x, 0, config.pixelsPerDay(), headerHeight);
+                    }
+                }
+            } else if (isWeekend(current)) {
+                // Weekend background (only in header area)
+                gc.setFill(GanttColorMapper.weekendBackground(closedDayColor));
                 gc.fillRect(x, 0, config.pixelsPerDay(), headerHeight);
             }
 
@@ -421,7 +448,10 @@ public class GanttCanvasView extends Canvas {
     private void drawTodayLine(GraphicsContext gc, double canvasHeight) {
         if (config.startDate() == null) return;
 
-        LocalDate today = LocalDate.now();
+        // Use todayDate from scheduleConfig if available, otherwise fall back to system date
+        LocalDate today = scheduleConfig != null && scheduleConfig.todayDate() != null
+            ? scheduleConfig.todayDate()
+            : LocalDate.now();
         if (today.isBefore(config.startDate()) || today.isAfter(config.endDate())) return;
 
         double x = config.labelColumnWidth() + ChronoUnit.DAYS.between(config.startDate(), today) * config.pixelsPerDay();

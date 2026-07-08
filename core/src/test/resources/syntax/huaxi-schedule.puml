@@ -1,0 +1,170 @@
+@startgantt 华西证券一期排期
+!define LIXIN_TASK_COLOR Turquoise
+language zh
+printscale daily zoom 1.5
+
+<style>
+ganttDiagram {
+  closed {
+    BackgroundColor WhiteSmoke
+  }
+}
+</style>
+
+project starts 2026-06-29
+saturday are closed
+sunday are closed
+today is 2026-07-06
+today is colored in Pink
+2026-08-25 is colored in MistyRose
+
+-- 序号34：经纪行情数据清洗 --
+[序号34：行情数据清洗] on {赖志淳} starts 2026-06-23 and ends 2026-07-03
+[序号34：行情数据清洗] is colored in LightSkyBlue
+[序号34：行情数据清洗] is 100% completed
+
+[序号34：数据网关查询] on {杨琛} starts 2026-07-06 and lasts 3 days
+[序号34：数据网关查询] is 0% completed
+[序号34：数据网关查询] is colored in LightSteelBlue
+
+[序号34：回测框架开发] on {张伟琛} requires 2 days
+[序号34：回测框架开发] starts at [序号34：数据网关查询]'s end
+[序号34：回测框架开发] is colored in LightGreen
+[序号34：回测框架开发] is 0% completed
+
+[序号34：开发完成] as [S34_DEV_DONE] happens at [序号34：行情数据清洗]'s end
+[S34_DEV_DONE] happens at [序号34：数据网关查询]'s end
+[S34_DEV_DONE] happens at [序号34：回测框架开发]'s end
+
+[序号34：测试] on {何海源} requires 3 days
+[序号34：测试] starts at [S34_DEV_DONE]'s end
+[序号34：测试] is colored in LightPink
+[序号34：测试] is 0% completed
+
+-- 序号21：回测数据支持灵活变频 --
+[序号21：需求方案工作] as [REQ] on {赖志淳} lasts 4 days
+[REQ] starts 2026-07-06
+[REQ] is colored in LightGoldenRodYellow
+[REQ] is 0% completed
+
+[序号21：分钟线生成组件开发] on {赖志淳} requires 10 days
+[序号21：分钟线生成组件开发] starts at [REQ]'s end
+[序号21：分钟线生成组件开发] is colored in LightSkyBlue
+[序号21：分钟线生成组件开发] is 0% completed
+
+[序号21：分钟线数据查询开发] on {杨琛} requires 10 days
+[序号21：分钟线数据查询开发] starts at [REQ]'s end
+[序号21：分钟线数据查询开发] is colored in LightSteelBlue
+[序号21：分钟线数据查询开发] is 0% completed
+
+[S21_DATA_DONE] happens at [序号21：分钟线生成组件开发]'s end
+[S21_DATA_DONE] happens at [序号21：分钟线数据查询开发]'s end
+
+[序号21：后端] on {李新} requires 5 days
+[序号21：后端] starts at [REQ]'s end
+[序号21：后端] is colored in LIXIN_TASK_COLOR
+[序号21：后端] is 0% completed
+
+[序号21：回测框架开发] on {张伟琛} requires 5 days
+[序号21：回测框架开发] starts at [S21_DATA_DONE]'s end
+[序号21：回测框架开发] is colored in LightGreen
+[序号21：回测框架开发] is 0% completed
+
+[序号21：开发完成] as [DEV_DONE] happens at [序号21：回测框架开发]'s end
+
+[序号21：功能测试] on {何海源} requires 4 days
+[序号21：功能测试] starts at [DEV_DONE]'s end
+[序号21：功能测试] is colored in LightPink
+[序号21：功能测试] is 0% completed
+
+[序号21：客户环境SIT测试] on {何海源} requires 2 days
+[序号21：客户环境SIT测试] starts at [序号21：功能测试]'s end
+[序号21：客户环境SIT测试] is colored in LightPink
+[序号21：客户环境SIT测试] is 0% completed
+
+[序号21：交付] as [S21_DELIVERY] happens at [序号21：客户环境SIT测试]'s end
+
+-- 序号10：回测支持设置滑点 --
+[序号10：前端开发] on {林伟栋} requires 5 days
+[序号10：前端开发] starts 2026-06-30
+[序号10：前端开发] is colored in LightSalmon
+[序号10：前端开发] is 90% completed
+
+[序号10：后端开发] on {李新} requires 4 days
+[序号10：后端开发] starts 2026-06-30
+[序号10：后端开发] is colored in LIXIN_TASK_COLOR
+
+[序号10：Eclipse开发] on {李新} requires 4 days
+[序号10：Eclipse开发] starts at [序号10：后端开发]'s end
+[序号10：Eclipse开发] is colored in LIXIN_TASK_COLOR
+
+[序号10：回测框架开发] on {张伟琛} requires 4 days
+[序号10：回测框架开发] starts 2026-07-07
+[序号10：回测框架开发] is colored in LightGreen
+
+[序号10：开发完成] as [S10_DEV_DONE] happens at [序号10：前端开发]'s end
+[S10_DEV_DONE] happens at [序号10：后端开发]'s end
+[S10_DEV_DONE] happens at [序号10：Eclipse开发]'s end
+[S10_DEV_DONE] happens at [序号10：回测框架开发]'s end
+
+[序号10：功能测试] on {何海源} requires 3 days
+[序号10：功能测试] starts at [S10_DEV_DONE]'s end
+[序号10：功能测试] is colored in LightPink
+
+[序号10：客户环境SIT测试] on {何海源} requires 2 days
+[序号10：客户环境SIT测试] starts at [序号10：功能测试]'s end
+[序号10：客户环境SIT测试] is colored in LightPink
+
+[序号10：交付] as [S10_DELIVERY] happens at [序号10：客户环境SIT测试]'s end
+
+-- 序号19：回测支持逐笔成交撮合 --
+[序号19：需求设计] as [S19_REQ] starts 2026-06-27 and ends 2026-07-09
+[S19_REQ] is colored in LightGoldenRodYellow
+
+[序号19：回测框架开发] on {张伟琛} requires 14 days
+[序号19：回测框架开发] starts at [S19_REQ]'s end
+[序号19：回测框架开发] is colored in LightGreen
+
+[序号19：功能测试] on {何海源} requires 4 days
+[序号19：功能测试] starts at [序号19：回测框架开发]'s end
+[序号19：功能测试] is colored in LightPink
+
+[序号19：客户环境SIT测试] on {何海源} requires 2 days
+[序号19：客户环境SIT测试] starts at [序号19：功能测试]'s end
+[序号19：客户环境SIT测试] is colored in LightPink
+
+-- 序号17：策略运行情况评价 --
+[序号17：需求设计] as [S17_REQ] starts 2026-07-01 and ends 2026-07-15
+[S17_REQ] is colored in LightGoldenRodYellow
+
+[序号17：前端开发] on {林伟栋} requires 8 days
+[序号17：前端开发] starts at [S17_REQ]'s end
+[序号17：前端开发] is colored in LightSalmon
+
+[序号17：后端开发] on {李新} requires 14 days
+[序号17：后端开发] starts at [S17_REQ]'s end
+[序号17：后端开发] is colored in LIXIN_TASK_COLOR
+
+[序号17：回测框架开发] on {张伟琛} requires 5 days
+[序号17：回测框架开发] starts at [S17_REQ]'s end
+[序号17：回测框架开发] is colored in LightGreen
+
+[序号17：开发完成] as [S17_DEV_DONE] happens at [序号17：前端开发]'s end
+[S17_DEV_DONE] happens at [序号17：后端开发]'s end
+[S17_DEV_DONE] happens at [序号17：回测框架开发]'s end
+
+[序号17：功能测试] on {何海源} requires 5 days
+[序号17：功能测试] starts at [S17_DEV_DONE]'s end
+[序号17：功能测试] is colored in LightPink
+
+[序号17：客户环境SIT测试] on {何海源} requires 2 days
+[序号17：客户环境SIT测试] starts at [序号17：功能测试]'s end
+[序号17：客户环境SIT测试] is colored in LightPink
+
+[序号17：交付] as [S17_DELIVERY] happens at [序号17：客户环境SIT测试]'s end
+
+[一期交付] as [DELIVERY] happens at [序号17：客户环境SIT测试]'s end
+[一期截止日期] as [DEADLINE] happens 2026-08-25
+[DEADLINE] is colored in Red
+
+@endgantt

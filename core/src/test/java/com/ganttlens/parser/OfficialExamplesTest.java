@@ -62,21 +62,18 @@ class OfficialExamplesTest {
         String content = readResource("constraints.puml");
         GanttSchedule schedule = parser.parse(content);
 
-        // 3 tasks (Test prototype appears twice: declaration + constraint)
-        assertThat(schedule.tasks()).hasSize(3);
+        // 2 tasks (Test prototype declaration + constraint merged)
+        assertThat(schedule.tasks()).hasSize(2);
 
         Task prototype = schedule.tasks().get(0);
         assertThat(prototype.name()).isEqualTo("Prototype design");
         assertThat(prototype.durationDays()).isEqualTo(15);
         assertThat(prototype.dependencyIds()).isEmpty();
 
-        Task testDecl = schedule.tasks().get(1);
-        assertThat(testDecl.name()).isEqualTo("Test prototype");
-        assertThat(testDecl.durationDays()).isEqualTo(10);
-
-        Task testConstraint = schedule.tasks().get(2);
-        assertThat(testConstraint.name()).isEqualTo("Test prototype");
-        assertThat(testConstraint.dependencyIds()).containsExactly("Prototype design");
+        Task test = schedule.tasks().get(1);
+        assertThat(test.name()).isEqualTo("Test prototype");
+        assertThat(test.durationDays()).isEqualTo(10);
+        assertThat(test.dependencyIds()).containsExactly("Prototype design");
     }
 
     // ========== short-names-alias.puml ==========
@@ -87,8 +84,8 @@ class OfficialExamplesTest {
         String content = readResource("short-names-alias.puml");
         GanttSchedule schedule = parser.parse(content);
 
-        // 3 tasks (T referenced by alias creates a third task entry)
-        assertThat(schedule.tasks()).hasSize(3);
+        // 2 tasks (T referenced by alias is merged into Test prototype)
+        assertThat(schedule.tasks()).hasSize(2);
 
         Task design = schedule.tasks().get(0);
         assertThat(design.name()).isEqualTo("Prototype design");
@@ -97,12 +94,8 @@ class OfficialExamplesTest {
         Task test = schedule.tasks().get(1);
         assertThat(test.name()).isEqualTo("Test prototype");
         assertThat(test.durationDays()).isEqualTo(10);
-
         // [T] starts at [D]'s end -> resolves alias D->Prototype design in dependency
-        // Note: [T] creates a task named "T" (alias not resolved for task name itself)
-        Task aliasRef = schedule.tasks().get(2);
-        assertThat(aliasRef.name()).isEqualTo("T");
-        assertThat(aliasRef.dependencyIds()).containsExactly("Prototype design");
+        assertThat(test.dependencyIds()).containsExactly("Prototype design");
     }
 
     // ========== completion-status.puml ==========
@@ -113,30 +106,22 @@ class OfficialExamplesTest {
         String content = readResource("completion-status.puml");
         GanttSchedule schedule = parser.parse(content);
 
-        // 4 tasks (foo and bar each have declaration + status lines)
-        assertThat(schedule.tasks()).hasSize(4);
+        // 2 tasks (progress lines are merged into declaration tasks)
+        assertThat(schedule.tasks()).hasSize(2);
 
-        // foo declaration: requires 21 days
-        Task fooDecl = schedule.tasks().get(0);
-        assertThat(fooDecl.name()).isEqualTo("foo");
-        assertThat(fooDecl.durationDays()).isEqualTo(21);
+        // foo: requires 21 days + is 40% complete (merged)
+        Task foo = schedule.tasks().get(0);
+        assertThat(foo.name()).isEqualTo("foo");
+        assertThat(foo.durationDays()).isEqualTo(21);
+        assertThat(foo.progressPercent()).isEqualTo(40);
+        assertThat(foo.status()).isEqualTo(TaskStatus.IN_PROGRESS);
 
-        // foo status: is 40% complete
-        Task fooStatus = schedule.tasks().get(1);
-        assertThat(fooStatus.name()).isEqualTo("foo");
-        assertThat(fooStatus.progressPercent()).isEqualTo(40);
-        assertThat(fooStatus.status()).isEqualTo(TaskStatus.IN_PROGRESS);
-
-        // bar declaration: requires 30 days
-        Task barDecl = schedule.tasks().get(2);
-        assertThat(barDecl.name()).isEqualTo("bar");
-        assertThat(barDecl.durationDays()).isEqualTo(30);
-
-        // bar status: is 10% complete
-        Task barStatus = schedule.tasks().get(3);
-        assertThat(barStatus.name()).isEqualTo("bar");
-        assertThat(barStatus.progressPercent()).isEqualTo(10);
-        assertThat(barStatus.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        // bar: requires 30 days + is 10% complete (merged)
+        Task bar = schedule.tasks().get(1);
+        assertThat(bar.name()).isEqualTo("bar");
+        assertThat(bar.durationDays()).isEqualTo(30);
+        assertThat(bar.progressPercent()).isEqualTo(10);
+        assertThat(bar.status()).isEqualTo(TaskStatus.IN_PROGRESS);
     }
 
     // ========== overload.puml ==========

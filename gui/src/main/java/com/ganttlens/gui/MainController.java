@@ -16,6 +16,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
@@ -197,6 +198,24 @@ public class MainController {
             currentSchedule = parser.parse(content);
             currentStats = engine.analyze(currentSchedule);
 
+            // Apply printscale zoom if specified
+            String zoomStr = currentSchedule.config().printscaleZoom();
+            if (zoomStr != null && !zoomStr.isBlank()) {
+                try {
+                    double zoom = Double.parseDouble(zoomStr);
+                    pixelsPerDay = LayoutConfig.DEFAULT_PIXELS_PER_DAY * zoom;
+                } catch (NumberFormatException ignored) {
+                    // keep current pixelsPerDay
+                }
+            }
+
+            // Update window title with project name
+            String title = currentSchedule.config().title();
+            if (title != null && !title.isBlank() && rootPane.getScene() != null
+                    && rootPane.getScene().getWindow() instanceof Stage stage) {
+                stage.setTitle("GanttLens - " + title);
+            }
+
             // Populate mutableTasks BEFORE computing layout
             mutableTasks.clear();
             mutableTasks.addAll(currentSchedule.tasks());
@@ -294,7 +313,7 @@ public class MainController {
 
         GanttCanvasView canvasView = new GanttCanvasView(ganttCanvas.getWidth(), ganttCanvas.getHeight());
         canvasView.setSelectedIds(selectionModel.getSelectedIds());
-        canvasView.render(currentLayouts, tasks, config);
+        canvasView.render(currentLayouts, tasks, config, currentSchedule.config());
 
         // Copy rendered content to the FXML canvas
         ganttCanvas.getGraphicsContext2D().drawImage(

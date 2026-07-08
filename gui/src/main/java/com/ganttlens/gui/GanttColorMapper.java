@@ -75,6 +75,21 @@ public final class GanttColorMapper {
     }
 
     /**
+     * Returns the background color for weekend (non-working) days.
+     * If closedDayColor is non-null and non-blank, uses that color; otherwise returns the default.
+     */
+    public static Color weekendBackground(String closedDayColor) {
+        if (closedDayColor != null && !closedDayColor.isBlank()) {
+            try {
+                return Color.web(closedDayColor);
+            } catch (IllegalArgumentException ignored) {
+                // Fall through to default
+            }
+        }
+        return weekendBackground();
+    }
+
+    /**
      * Returns the grid line color for date separators.
      */
     public static Color gridLineColor() {

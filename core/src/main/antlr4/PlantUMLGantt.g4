@@ -106,6 +106,7 @@ requiresOrLastsClause
 startsAtOrDateClause
     : STARTS_AT startDate
     | STARTS DATE_TOKEN AND ENDS DATE_TOKEN
+    | STARTS DATE_TOKEN AND LASTS duration
     | STARTS DATE_TOKEN
     | ENDS DATE_TOKEN
     ;
@@ -137,7 +138,7 @@ thenTask
 // ========== Milestone ==========
 milestone
     : taskGroup? (LBRACK taskName RBRACK (AS LBRACK alias=WORD RBRACK)? | taskName)
-      HAPPENS (AT taskRef S_END | ON DATE_TOKEN)
+      HAPPENS (AT taskRef S_END | ON DATE_TOKEN | DATE_TOKEN)
     ;
 
 // ========== Shared ==========

@@ -31,7 +31,8 @@ public class GanttPreprocessor {
     public record PreprocessResult(
         String content,
         String closedDayColor,
-        Map<LocalDate, String> dateColors
+        Map<LocalDate, String> dateColors,
+        LocalDate todayDate
     ) {}
 
     /**
@@ -71,6 +72,7 @@ public class GanttPreprocessor {
 
         // Phase 4: Process line by line - extract today/date-color directives
         Map<LocalDate, String> dateColors = new LinkedHashMap<>();
+        LocalDate todayDate = null;
         StringBuilder cleaned = new StringBuilder();
         for (String line : content.split("\n", -1)) {
             String trimmed = line.trim();
@@ -80,9 +82,9 @@ public class GanttPreprocessor {
             }
 
             // today is DATE
-            Matcher todayDate = TODAY_IS_DATE_PATTERN.matcher(trimmed);
-            if (todayDate.matches()) {
-                // Silently discard
+            Matcher todayMatcher = TODAY_IS_DATE_PATTERN.matcher(trimmed);
+            if (todayMatcher.matches()) {
+                todayDate = LocalDate.parse(todayMatcher.group(1));
                 continue;
             }
 
@@ -111,6 +113,6 @@ public class GanttPreprocessor {
             finalContent = finalContent.substring(0, finalContent.length() - 1);
         }
 
-        return new PreprocessResult(finalContent, closedDayColor, dateColors);
+        return new PreprocessResult(finalContent, closedDayColor, dateColors, todayDate);
     }
 }

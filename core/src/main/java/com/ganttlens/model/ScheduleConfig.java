@@ -17,14 +17,15 @@ public record ScheduleConfig(
     String language,
     String printscaleZoom,
     String closedDayColor,
-    Map<LocalDate, String> dateColors
+    Map<LocalDate, String> dateColors,
+    LocalDate todayDate
 ) {
     /** Backward-compatible constructor without new fields. */
     public ScheduleConfig(String title, LocalDate projectStartDate,
                           boolean saturdayClosed, boolean sundayClosed,
                           Set<LocalDate> holidays, Set<PersonOffEntry> personOffDays) {
         this(title, projectStartDate, saturdayClosed, sundayClosed,
-             holidays, personOffDays, "", "", null, Map.of());
+             holidays, personOffDays, "", "", null, Map.of(), null);
     }
 
     public record PersonOffEntry(String person, LocalDate date) {}

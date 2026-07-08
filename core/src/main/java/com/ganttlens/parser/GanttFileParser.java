@@ -36,7 +36,7 @@ public class GanttFileParser {
         ParseTree tree = parser.ganttFile();
 
         GanttParseListener listener = new GanttParseListener(
-            prep.closedDayColor(), prep.dateColors()
+            prep.closedDayColor(), prep.dateColors(), prep.todayDate()
         );
         listener.visit(tree);
 

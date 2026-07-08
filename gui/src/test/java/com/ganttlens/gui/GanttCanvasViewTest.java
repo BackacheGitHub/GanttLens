@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,5 +110,74 @@ class GanttCanvasViewTest {
         
         assertThat(arrowClearance).isEqualTo(8.0);
         assertThat(fixedTextStart).isGreaterThan(originalTextStart);
+    }
+
+    /**
+     * Verifies that rendering with a full ScheduleConfig (todayDate, dateColors, closedDayColor)
+     * does not throw any exceptions.
+     */
+    @Test
+    void render_withScheduleConfig_doesNotThrow() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 15);
+
+        LayoutConfig layoutConfig = LayoutConfig.withDefaults(start, end);
+
+        ScheduleConfig scheduleConfig = new ScheduleConfig(
+            "Test Project", start,
+            true, true,
+            Set.<LocalDate>of(), Set.<ScheduleConfig.PersonOffEntry>of(),
+            "zh", "1.5", "WhiteSmoke",
+            Map.of(LocalDate.of(2026, 7, 10), "MistyRose"),
+            LocalDate.of(2026, 7, 6)
+        );
+
+        List<Task> tasks = List.of(
+            makeTask("t1", "TaskA", start, start.plusDays(3), List.of())
+        );
+
+        GanttLayoutEngine engine = new GanttLayoutEngine();
+        List<TaskLayout> layouts = engine.computeLayout(tasks, Set.of(), layoutConfig);
+
+        GanttCanvasView canvas = new GanttCanvasView(800, 400);
+        // Should not throw
+        canvas.render(layouts, tasks, layoutConfig, scheduleConfig);
+
+        assertThat(canvas).isNotNull();
+        assertThat(canvas.getWidth()).isEqualTo(800);
+    }
+
+    /**
+     * Verifies that the today line renders correctly when todayDate is within the visible range.
+     */
+    @Test
+    void render_withTodayDate_rendersWithoutException() {
+        LocalDate start = LocalDate.of(2026, 7, 1);
+        LocalDate end = LocalDate.of(2026, 7, 15);
+        LocalDate todayDate = LocalDate.of(2026, 7, 6); // within range
+
+        LayoutConfig layoutConfig = LayoutConfig.withDefaults(start, end);
+
+        ScheduleConfig scheduleConfig = new ScheduleConfig(
+            "Test", start,
+            true, true,
+            Set.<LocalDate>of(), Set.<ScheduleConfig.PersonOffEntry>of(),
+            "", "", null, Map.of(),
+            todayDate
+        );
+
+        List<Task> tasks = List.of(
+            makeTask("t1", "TaskA", start, start.plusDays(3), List.of())
+        );
+
+        GanttLayoutEngine engine = new GanttLayoutEngine();
+        List<TaskLayout> layouts = engine.computeLayout(tasks, Set.of(), layoutConfig);
+
+        GanttCanvasView canvas = new GanttCanvasView(800, 400);
+        canvas.render(layouts, tasks, layoutConfig, scheduleConfig);
+
+        // Verify canvas was created and rendered successfully
+        assertThat(canvas).isNotNull();
+        assertThat(canvas.getWidth()).isEqualTo(800);
     }
 }

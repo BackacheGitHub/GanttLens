@@ -80,6 +80,16 @@ class MainFxmlTest {
     }
 
     @Test
+    void weekendBackground_withClosedDayColor_returnsCustomColor() {
+        assertThat(GanttColorMapper.weekendBackground("WhiteSmoke")).isEqualTo(Color.web("WhiteSmoke"));
+    }
+
+    @Test
+    void weekendBackground_withNull_returnsDefault() {
+        assertThat(GanttColorMapper.weekendBackground(null)).isEqualTo(Color.web("#F5F5F5"));
+    }
+
+    @Test
     void ganttCanvasRendersWithGroupHeadersWithoutException() throws Exception {
         // Given: FXMLLoader loads main.fxml (triggers initialize() → parseAndAnalyze())
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
